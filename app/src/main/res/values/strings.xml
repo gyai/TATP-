@@ -1,0 +1,13 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">TATP</string>
+    <string name="todo">TODO</string>
+    <string name="button">転送タッチしてね</string>
+    <string name="text">ボタンが押されたよ</string>
+    <string name="textv">タッチされたよ</string>
+    <string name="b">return</string>
+    <string name="text2">ボタンを押してね</string>
+    <string name="pointer">TODO</string>
+    <string name="r_b">r_b</string>
+
+
+</resources>

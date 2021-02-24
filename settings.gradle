@@ -1,0 +1,3 @@
+include ':app', ":libftsp"
+rootProject.name = "Capacitive_get"
+include ':openCVLibrary343'
