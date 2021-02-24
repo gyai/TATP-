@@ -53,7 +53,9 @@ public class MainActivity extends AppCompatActivity{
         System.loadLibrary("opencv_java3");
     }
 
-
+    /**
+     * 一応ビルドできる、いらないやつ②つ生成されてた
+     */
     //グローバル変数
     public static int[][] capmatrix = null;//静電容量値
     public static int[] flattermatrix = null;//1次元配列静電容量値
