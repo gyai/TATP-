@@ -22,12 +22,20 @@
             android:id="@+id/pointerimg"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:layout_marginStart="184dp"
-            android:layout_marginBottom="564dp"
+            android:layout_marginStart="71dp"
+            android:layout_marginTop="40dp"
             android:contentDescription="@string/pointer"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/wakuimage"
+            app:layout_constraintTop_toBottomOf="@+id/wakuimage"
             app:srcCompat="@drawable/pointer" />
+
+        <ImageView
+            android:id="@+id/wakuimage"
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            app:layout_constraintStart_toStartOf="@+id/button"
+            app:layout_constraintTop_toTopOf="@+id/button"
+            app:srcCompat="@drawable/waku" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

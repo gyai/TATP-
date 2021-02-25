@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity{
     public static Boolean xmove_flg = false;//指の傾きが最大のとき&&0.5秒固定していたら、それより奥に0.5秒間隔で20ピクセルずつ動く判定フラグ
     public Boolean errorflg = false;//楕円が認識されなかった時用
 
-    public Boolean yo_hoseiflg = true;//ヨー角の傾きを補正して真上方向にするかどうか。trueなら補正をかける
+    public Boolean yo_hoseiflg = false;//ヨー角の傾きを補正して真上方向にするかどうか。trueなら補正をかける
 
     ///OpenCV///
     public RotatedRect box;
@@ -98,6 +98,7 @@ public class MainActivity extends AppCompatActivity{
     static final int SAIBYOUGA_KANKAKU_MS = 50; //pointerの再描画の間隔（ms）。小さいほどアニメーションが滑らかに。
 
     public static ImageView pointerimage;
+    public static ImageView waku;
 
     //画像用
     private int[] pix;
@@ -144,6 +145,13 @@ public class MainActivity extends AppCompatActivity{
         pointerimage.setImageResource(R.drawable.pointer);
         pointerimage.setLayoutParams(imagelp);
         pointerimage.setVisibility(View.GONE);//なかったようにする,非表示
+
+        ConstraintLayout.LayoutParams wakulp = new ConstraintLayout.LayoutParams(110,110);
+        waku = findViewById(R.id.wakuimage);
+        waku.setImageResource(R.drawable.waku);
+        waku.setLayoutParams(wakulp);
+        waku.setVisibility(View.GONE);
+
 
         localDeviceHandler.startHandler();//静電容量リスナー（スレッド）起動
         seidenListener();
@@ -238,11 +246,16 @@ public class MainActivity extends AppCompatActivity{
                     pointerimage.setTranslationX(pointer_finalx);
                     pointerimage.setTranslationY(pointer_finaly);
                     pointerimage.setVisibility(View.VISIBLE);
+
+                    waku.setTranslationX(syoki_pointerx - 55);
+                    waku.setTranslationY(syoki_pointery - 55);
+                    waku.setVisibility(View.VISIBLE);
                     //Log.d("フラグ",String.valueOf(ymove_flg) + String.valueOf(xmove_flg));
                     pointerhandler.postDelayed(this, SAIBYOUGA_KANKAKU_MS);//0.05秒間隔でアニメーションしてる
 
                 }else{
                     pointerimage.setVisibility(View.GONE);//指が離れたらポインタ隠す
+                    waku.setVisibility(View.GONE);
                     //pointer_finalx = syoki_pointerx;
                     //pointer_finaly = syoki_pointery;
                 }
