@@ -222,6 +222,7 @@ public class MainActivity extends AppCompatActivity{
                            pointer_kiseki.append(String.valueOf(keisan_x) + " , " + String.valueOf(keisan_y) + " : ");
                             */
                            //初期位置ヨー角補正//
+                           /**
                            pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
                            pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
                            if (xmove_flg) {
@@ -232,6 +233,7 @@ public class MainActivity extends AppCompatActivity{
                            }
                            pointer_finalx = pointer_x -50;
                            pointer_finaly = pointer_y -50;
+                            */
                        } else {
 
                            //ヨー角そのままの時//
