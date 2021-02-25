@@ -1,28 +1,22 @@
-package com.example.TATP;
+package com.example.TATP_a;
 
-import android.accessibilityservice.GestureDescription;
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.res.ResourcesCompat;
@@ -389,7 +383,7 @@ if (errorflg){
                     double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
                     //Log.d("button座標",String.valueOf(bx)+" , "+String.valueOf(by));
                     task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
-
+/**
                     ///習熟度計算////
                     int rot = task_count+1;
 
@@ -414,7 +408,7 @@ if (errorflg){
                         }
                     }
                     //習熟度計算終わり//
-
+*/
 
 
                     ///でーた保存///
