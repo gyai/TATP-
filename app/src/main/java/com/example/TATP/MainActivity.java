@@ -9,6 +9,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -77,6 +78,7 @@ public class MainActivity extends AppCompatActivity{
 
     ///OpenCV///
     public RotatedRect box;
+    public Bitmap bmpimage;
 
     //touch転送用変数
     public float syoki_touch_x, syoki_touch_y;
@@ -123,6 +125,7 @@ public class MainActivity extends AppCompatActivity{
     public StringBuilder pointer_kiseki = new StringBuilder();
     public String task_kekka;
     public View view;
+    public int imagecount = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -248,6 +251,10 @@ public class MainActivity extends AppCompatActivity{
                                pointer_y = 1350;
                            }
                            pointer_kiseki.append(String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y) + " : ");
+
+                           //静電容量保存
+                           saveimageFile();
+                           imagecount += 1;
 
                            pointer_finalx = pointer_x - 50;//受け取った転送先座標から画像の幅/2を引いて、座標を画像の真ん中に。
                            pointer_finaly = pointer_y - 50;
@@ -404,14 +411,17 @@ if (errorflg){
                             }
                         }
                     }
+                    //習熟度計算終わり//
+
 
 
                     ///でーた保存///
-                    saveFile(task_kekka);
+                    saveFile();
 
                     ////1タスク完了後データ等の処理//
                     ///軌跡系変数を初期化or消す//
                     pointer_kiseki = new StringBuilder();//インスタンス再生性してデータ消す
+                    imagecount = 1;
                     //結果データ格納、保存//
                     //Log.d("結果", task_kekka);
                     task_count += 1;
@@ -494,21 +504,57 @@ if (errorflg){
 
 ///////////////////////////////////////////////関数//////////////////////////////////////
     // ファイルを保存関数//
-    public void saveFile(String str) {
+    public void saveFile() {
         //ファイル保存用//
-        File file;
-        String fileName = "task" + String.valueOf(task_count+1) + ".txt";
-        // try-with-resources
+
+        String fileName = "task" + String.valueOf(String.format("%02d",task_count+1)) + ".txt";
+
         try {
-            FileOutputStream outputStream = openFileOutput(fileName, MODE_PRIVATE);
+            //text保存
+            File extStrageDir =
+                    Environment.getExternalStorageDirectory();
+            File file = new File(
+                    extStrageDir.getAbsolutePath()
+                            + "/" + Environment.DIRECTORY_DOWNLOADS,
+                    fileName);
+            FileOutputStream outputStream = new FileOutputStream(file);
+            //bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
             OutputStreamWriter writer = new OutputStreamWriter(outputStream);
-            writer.write(str);
+            writer.write(task_kekka);
             writer.flush();
             writer.close();
+            //FileOutputStream outputStream = openFileOutput(fileName, MODE_PRIVATE);
+            //OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+            //writer.write(task_kekka);
+            //writer.flush();
+            //writer.close();
 
         }
         catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    // ファイルを保存関数//
+    public void saveimageFile() {
+        //ファイル保存用//
+
+        String image_fileName = "task" + String.valueOf(String.format("%02d",task_count+1)) + "_i_" + String.valueOf(String.format("%03d",imagecount)) + ".png";
+        // try-with-resources
+        try {
+
+            //画像保存
+            File extStrageDir =
+                    Environment.getExternalStorageDirectory();
+            File i_file = new File(
+                    extStrageDir.getAbsolutePath()
+                            + "/" + Environment.DIRECTORY_DOWNLOADS,
+                    image_fileName);
+            FileOutputStream outStream = new FileOutputStream(i_file);
+            bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+            outStream.close();
+        }
+        catch (IOException ioExceptione) {
+            ioExceptione.printStackTrace();
         }
     }
 
@@ -551,8 +597,9 @@ if (errorflg){
                 ///////////////////////画像化処理→ヨー角と輪郭size取得////////////////////////////////
 
                 //静電容量が生成された(実質タップされた)時//
-                Bitmap bmpimage = Bitmap.createBitmap(capmatrix[0].length, capmatrix.length, Bitmap.Config.ARGB_8888);
+                bmpimage = Bitmap.createBitmap(capmatrix[0].length, capmatrix.length, Bitmap.Config.ARGB_8888);
                 bmpimage.setPixels(pix, 0, width, 0, 0, width, height);//bmpimageにsetPixel()で画像データに合わせている（幅や高さなど）
+
 
                 //OpenCV//
                 Mat mat_img = new Mat();
