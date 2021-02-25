@@ -280,9 +280,11 @@ public class MainActivity extends AppCompatActivity{
                     } else if (syoki_pointery >= 1350) {
                         syoki_pointery = 1350;
                     }
+                    /**
                     waku.setTranslationX(syoki_pointerx - 55);
                     waku.setTranslationY(syoki_pointery - 55);
                     waku.setVisibility(View.VISIBLE);
+                     */
                     Log.d("pointer",String.valueOf(pointer_finalx) +" , "+ String.valueOf(pointer_finaly));
                     Log.d("syokipointer",String.valueOf(syoki_pointerx) +" , "+ String.valueOf(syoki_pointery));
 
@@ -290,7 +292,7 @@ public class MainActivity extends AppCompatActivity{
 
                 }else{
                     pointerimage.setVisibility(View.GONE);//指が離れたらポインタ隠す
-                    waku.setVisibility(View.GONE);
+                    //waku.setVisibility(View.GONE);
                     //pointer_finalx = syoki_pointerx;
                     //pointer_finaly = syoki_pointery;
                 }

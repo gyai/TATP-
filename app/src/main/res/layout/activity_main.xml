@@ -11,18 +11,25 @@
 
         <ImageView
             android:id="@+id/imageView"
-            android:layout_width="343dp"
-            android:layout_height="705dp"
-            app:srcCompat="@drawable/sousawaku"
-            tools:layout_editor_absoluteX="16dp"
-            tools:layout_editor_absoluteY="259dp" />
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="40dp"
+            android:layout_marginTop="250dp"
+            android:layout_marginEnd="40dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/sousawaku" />
 
         <Button
             android:id="@+id/button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="350dp"
             android:stateListAnimator="@null"
             android:text="@string/r_b"
+            app:layout_constraintBottom_toTopOf="@+id/imageView"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -41,10 +48,10 @@
             android:id="@+id/wakuimage"
             android:layout_width="20dp"
             android:layout_height="20dp"
+            android:contentDescription="TODO"
             app:layout_constraintStart_toStartOf="@+id/button"
             app:layout_constraintTop_toTopOf="@+id/button"
-            app:srcCompat="@drawable/waku"
-            android:contentDescription="TODO" />
+            app:srcCompat="@drawable/waku" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
