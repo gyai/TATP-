@@ -206,6 +206,7 @@ public class MainActivity extends AppCompatActivity{
                 if (touchdown_flag) {
                        if (yo_hoseiflg) {
                            //ヨー角を調整する時//
+                           /**
                            if (keisan_x <= 70) {
                                keisan_x = 70;
                            } else if (keisan_x >= 1110) {
@@ -219,10 +220,18 @@ public class MainActivity extends AppCompatActivity{
                            pointer_finalx = keisan_x - 50;
                            pointer_finaly = keisan_y - 50;
                            pointer_kiseki.append(String.valueOf(keisan_x) + " , " + String.valueOf(keisan_y) + " : ");
-
+                            */
                            //初期位置ヨー角補正//
-
-
+                           pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
+                           pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
+                           if (xmove_flg) {
+                               syoki_pointerx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
+                           }
+                           if (ymove_flg) {
+                               syoki_pointery = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
+                           }
+                           pointer_finalx = pointer_x -50;
+                           pointer_finaly = pointer_y -50;
                        } else {
 
                            //ヨー角そのままの時//
@@ -610,6 +619,7 @@ if (errorflg){
         //sa_y = (syoki_touch_y - move_y) / (float) Math.cos(Math.toRadians(syoki_yo));
 
         //Log.d("sa_y差","first: "+ String.valueOf(touch_y)+" , move: "+String.valueOf(move_y)+ " , 差: " +String.valueOf(s_a_y));
+        if (!yo_hoseiflg){//ヨー補正なし
         if (!ymove_flg) {
             if (sa_y < 15 && -25 < sa_y) {//yの移動量が-25、+15の範囲内なら基準速(指の下方向は動かしづらいから)
                 pointer_y = syoki_pointery - (sa_y * 3);
@@ -628,27 +638,28 @@ if (errorflg){
                 syoki_pointery += 20;
 
             }
-            if (yo_hoseiflg) {
-                syoki_pointery = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
+
+
+        }}else{//よー補正あり
+                /**if (yo_hoseiflg) {
+                 ///行列計算してθ分回転させる///
+                 keisan_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
+
+                 }
+                 if (keisan_y < 90) {
+                 keisan_y = 90;
+                 } else if (keisan_y >= 1350) {
+                 keisan_y = 1350;
+                 }
+                 if (syoki_pointery < 90) {
+                 syoki_pointery = 90;
+                 } else if (syoki_pointery >= 1350) {
+                 syoki_pointery = 1350;
+                 }
+                 if (yo_hoseiflg) {
+                 //syoki_pointery = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
+                 }*/
             }
-        }
-        if (yo_hoseiflg) {
-            ///行列計算してθ分回転させる///
-            keisan_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
-            //pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
-
-        }
-        if (keisan_y < 90) {
-            keisan_y = 90;
-        } else if (keisan_y >= 1350) {
-            keisan_y = 1350;
-        }
-        if (syoki_pointery < 90) {
-            syoki_pointery = 90;
-        } else if (syoki_pointery >= 1350) {
-            syoki_pointery = 1350;
-        }
-
     }
     ///x座標を設定する関数////
 
@@ -659,6 +670,7 @@ if (errorflg){
         //Log.d("x差","初期タッチx: "+String.valueOf(syoki_touch_x)+" , 移動タッチｘ"+String.valueOf(move_x));
 
         ///初期位置から30までは差をそのまま。それ以降は加速度的に速度を変えたい//
+        if (!yo_hoseiflg){//よー補正なし
         if (!xmove_flg) {
             if (sa_x < 25 && -25 < sa_x) {//xの移動差がプラマイ25以下なら加速度なし。基準速(2倍)
                 pointer_x = syoki_pointerx - (float) (sa_x * 3);
@@ -677,25 +689,27 @@ if (errorflg){
                 syoki_pointerx -= 20;
 
             }
-            if (yo_hoseiflg) {
-                syoki_pointerx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
-            }
-        }
-        if (yo_hoseiflg) {
-            ///行列計算してθ分回転させる///
-            keisan_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
-            //pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
+        }}else {//よー補正あり
+            /**
+             if (yo_hoseiflg) {
+             ///行列計算してθ分回転させる///
+             keisan_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
 
-        }
-        if (keisan_x <= 70) {
-            keisan_x = 70;
-        } else if (keisan_x >= 1080) {
-            keisan_x = 1080;
-        }
-        if (syoki_pointerx <= 70) {
-            syoki_pointerx = 70;
-        } else if (syoki_pointerx >= 1080) {
-            syoki_pointerx = 1080;
+             }
+             if (keisan_x <= 70) {
+             keisan_x = 70;
+             } else if (keisan_x >= 1080) {
+             keisan_x = 1080;
+             }
+             if (syoki_pointerx <= 70) {
+             syoki_pointerx = 70;
+             } else if (syoki_pointerx >= 1080) {
+             syoki_pointerx = 1080;
+             }*/
+            /**
+             if (yo_hoseiflg) {
+             //syoki_pointerx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
+             }*/
         }
     }
 
@@ -778,6 +792,7 @@ if (errorflg){
 
                     } catch (InterruptedException interruptedException) {
                         Log.d("Thread", "スレッドを停止");
+                        //このログを見たことは無い。機能していない//
                         return;
                     }
 

@@ -9,6 +9,14 @@
     tools:ignore="ExtraText">
 
 
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="343dp"
+            android:layout_height="705dp"
+            app:srcCompat="@drawable/sousawaku"
+            tools:layout_editor_absoluteX="16dp"
+            tools:layout_editor_absoluteY="259dp" />
+
         <Button
             android:id="@+id/button"
             android:layout_width="wrap_content"
