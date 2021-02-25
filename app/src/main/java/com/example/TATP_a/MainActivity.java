@@ -383,7 +383,7 @@ if (errorflg){
                     double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
                     //Log.d("button座標",String.valueOf(bx)+" , "+String.valueOf(by));
                     task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
-
+/**
                     ///習熟度計算////
                     int rot = task_count+1;
 
@@ -408,7 +408,7 @@ if (errorflg){
                         }
                     }
                     //習熟度計算終わり//
-
+*/
 
 
                     ///でーた保存///
