@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">TATP_a</string>
+    <string name="app_name">TATP_practice</string>
     <string name="todo">TODO</string>
     <string name="button">転送タッチしてね</string>
     <string name="text">ボタンが押されたよ</string>
@@ -9,11 +9,6 @@
     <string name="pointer">TODO</string>
     <string name="r_b">r_b</string>
     <string name="waku">TODO</string>
-    <string name="button2">Button</string>
-    <string name="button3">Button</string>
-    <string name="textview2">TextView</string>
-    <string name="hosei_on">指の向き補正あり</string>
-    <string name="hosei_off">指の向き補正なし</string>
 
 
 </resources>

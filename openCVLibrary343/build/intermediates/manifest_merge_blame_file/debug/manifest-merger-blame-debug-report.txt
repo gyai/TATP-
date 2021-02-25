@@ -5,18 +5,10 @@
 5    android:versionName="3.4.3" >
 6
 7    <uses-sdk
-<<<<<<< HEAD
-7-->/Users/hangaikanta/Documents/TATP_practice/openCVLibrary343/src/main/AndroidManifest.xml:7:5-73
+7-->/Users/hangaikanta/Desktop/最新実験アプリ/TATP(習熟度、通常完成)(実験)/openCVLibrary343/src/main/AndroidManifest.xml:7:5-73
 8        android:minSdkVersion="8"
-8-->/Users/hangaikanta/Documents/TATP_practice/openCVLibrary343/src/main/AndroidManifest.xml:7:15-40
+8-->/Users/hangaikanta/Desktop/最新実験アプリ/TATP(習熟度、通常完成)(実験)/openCVLibrary343/src/main/AndroidManifest.xml:7:15-40
 9        android:targetSdkVersion="21" />
-9-->/Users/hangaikanta/Documents/TATP_practice/openCVLibrary343/src/main/AndroidManifest.xml:7:41-70
-=======
-7-->/Users/hangaikanta/Documents/TATP_a/openCVLibrary343/src/main/AndroidManifest.xml:7:5-73
-8        android:minSdkVersion="8"
-8-->/Users/hangaikanta/Documents/TATP_a/openCVLibrary343/src/main/AndroidManifest.xml:7:15-40
-9        android:targetSdkVersion="21" />
-9-->/Users/hangaikanta/Documents/TATP_a/openCVLibrary343/src/main/AndroidManifest.xml:7:41-70
->>>>>>> c07998a6d93f0d5dcc2a533cab3bde41b1f8071b
+9-->/Users/hangaikanta/Desktop/最新実験アプリ/TATP(習熟度、通常完成)(実験)/openCVLibrary343/src/main/AndroidManifest.xml:7:41-70
 10
 11</manifest>

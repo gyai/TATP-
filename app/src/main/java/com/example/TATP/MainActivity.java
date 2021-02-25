@@ -1,23 +1,28 @@
-package com.example.TATP_a;
+package com.example.TATP;
 
+import android.accessibilityservice.GestureDescription;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.res.ResourcesCompat;
@@ -122,9 +127,6 @@ public class MainActivity extends AppCompatActivity{
     public View view;
     public int imagecount = 1;
 
-    //practice用
-    TextView textView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -159,24 +161,6 @@ public class MainActivity extends AppCompatActivity{
 
         view = new View(getApplicationContext());
         view = findViewById(R.id.frameLayout);
-
-        //practice用。補正ありなし切り替えボタン/text//
-        textView = findViewById(R.id.textView2);
-        textView.setTextSize(100);
-        textView.setText("指の向き補正なし");
-
-        Button button2 = findViewById(R.id.button2);
-        button2.setOnClickListener( v -> {
-            textView.setText("指の向き補正なし");
-            yo_hoseiflg = false;
-            task_count = 0;
-        });
-        Button button3 = findViewById(R.id.button3);
-        button3.setOnClickListener( v -> {
-            textView.setText("指の向き補正あり");
-            yo_hoseiflg = true;
-            task_count = 0;
-        });
 
     }
 
@@ -405,7 +389,7 @@ if (errorflg){
                     double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
                     //Log.d("button座標",String.valueOf(bx)+" , "+String.valueOf(by));
                     task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
-/**
+
                     ///習熟度計算////
                     int rot = task_count+1;
 
@@ -430,7 +414,7 @@ if (errorflg){
                         }
                     }
                     //習熟度計算終わり//
-*/
+
 
 
                     ///でーた保存///
@@ -455,7 +439,6 @@ if (errorflg){
                 long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
                 pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
                 pointerimage.setVisibility(View.GONE);
-                imagecount = 1;
                 touchdown_flag = false;
                 xmove_flg = false;
                 ymove_flg = false;
@@ -534,7 +517,7 @@ if (errorflg){
                     Environment.getExternalStorageDirectory();
             File file = new File(
                     extStrageDir.getAbsolutePath()
-                            + "/" + Environment.DIRECTORY_DCIM,
+                            + "/" + Environment.DIRECTORY_DOWNLOADS,
                     fileName);
             FileOutputStream outputStream = new FileOutputStream(file);
             //bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
@@ -566,7 +549,7 @@ if (errorflg){
                     Environment.getExternalStorageDirectory();
             File i_file = new File(
                     extStrageDir.getAbsolutePath()
-                            + "/" + Environment.DIRECTORY_DCIM,
+                            + "/" + Environment.DIRECTORY_DOWNLOADS,
                     image_fileName);
             FileOutputStream outStream = new FileOutputStream(i_file);
             bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outStream);

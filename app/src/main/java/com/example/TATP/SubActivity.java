@@ -1,4 +1,4 @@
-package com.example.TATP_a;
+package com.example.TATP;
 
 import androidx.appcompat.app.AppCompatActivity;
 
