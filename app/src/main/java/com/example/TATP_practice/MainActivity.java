@@ -1,4 +1,4 @@
-package com.example.TATP_a;
+package com.example.TATP_practice;
 
 import android.content.Intent;
 import android.content.res.Resources;
@@ -222,13 +222,50 @@ public class MainActivity extends AppCompatActivity{
                        if (yo_hoseiflg) {
                            //ヨー角を調整する時//
 
+
+                           if (yo_hoseiflg) {
+                               ///行列計算してθ分回転させる///
+                               keisan_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
+                               syoki_keisanx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
+                               ///行列計算してθ分回転させる///
+                               keisan_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
+                               syoki_keisany = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
+
+                           }
+                           if (keisan_x <= 70) {
+                               keisan_x = 70;
+                           } else if (keisan_x >= 1080) {
+                               keisan_x = 1080;
+                           }
+                           if (syoki_keisanx <= 70) {
+                               syoki_keisanx = 70;
+                           } else if (syoki_keisanx >= 1080) {
+                               syoki_keisanx = 1080;
+                           }
+
+                           if (keisan_y < 90) {
+                               keisan_y = 90;
+                           } else if (keisan_y >= 1350) {
+                               keisan_y = 1350;
+                           }
+                           if (syoki_keisany < 90) {
+                               syoki_keisany = 90;
+                           } else if (syoki_keisany >= 1350) {
+                               syoki_keisany = 1350;
+                           }
+
                            pointer_finalx = keisan_x - 50;
                            pointer_finaly = keisan_y - 50;
                            pointer_kiseki.append(String.valueOf(keisan_x) + " , " + String.valueOf(keisan_y) + " : ");
 
-                           syoki_finalx = syoki_keisanx;
-                           syoki_finaly = syoki_keisany;
+                           syoki_finalx = syoki_keisanx - 50;
+                           syoki_finaly = syoki_keisany - 50;
 
+                           ///ここで、初期位置から微小な範囲(20*20)しか動いてないときは位置を更新せず、初期位置に固定する//
+                           if (syoki_finalx - 5 <= pointer_finalx && pointer_finalx <= syoki_finalx + 5 && syoki_finaly - 5 <= pointer_finaly && pointer_finaly <= syoki_finaly + 5) {
+                               pointer_finalx = syoki_finalx;
+                               pointer_finaly = syoki_finaly;
+                           }
                        } else {
 
                            //ヨー角そのままの時//
@@ -244,10 +281,6 @@ public class MainActivity extends AppCompatActivity{
                            }
                            pointer_kiseki.append(String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y) + " : ");
 
-
-                           pointer_finalx = pointer_x - 50;//受け取った転送先座標から画像の幅/2を引いて、座標を画像の真ん中に。
-                           pointer_finaly = pointer_y - 50;
-
                            if (syoki_pointerx <= 70) {
                                syoki_pointerx = 70;
                            } else if (syoki_pointerx >= 1080) {
@@ -259,19 +292,24 @@ public class MainActivity extends AppCompatActivity{
                                syoki_pointery = 1350;
                            }
 
-                           syoki_finalx = syoki_pointerx;
-                           syoki_finaly = syoki_pointery;
+
+                           pointer_finalx = pointer_x - 50;//受け取った転送先座標から画像の幅/2を引いて、座標を画像の真ん中に。
+                           pointer_finaly = pointer_y - 50;
+
+                           syoki_finalx = syoki_pointerx -50;
+                           syoki_finaly = syoki_pointery -50;
+
+                           ///ここで、初期位置から微小な範囲(20*20)しか動いてないときは位置を更新せず、初期位置に固定する//
+                           if (syoki_pointerx - 5 <= pointer_x && pointer_x <= syoki_pointerx + 5 && syoki_pointery - 5 <= pointer_y && pointer_y <= syoki_pointery + 5) {
+                               pointer_finalx = syoki_finalx;
+                               pointer_finaly = syoki_finaly;
+                           }
                        }
 
                     //静電容量保存
                     saveimageFile();
                     imagecount += 1;
 
-                    ///ここで、初期位置から微小な範囲(20*20)しか動いてないときは位置を更新せず、初期位置に固定する//
-                    if (syoki_pointerx - 5 <= pointer_x && pointer_x <= syoki_pointerx + 5 && syoki_pointery - 5 <= pointer_y && pointer_y <= syoki_pointery + 5) {
-                        pointer_finalx = syoki_finalx;
-                        pointer_finaly = syoki_finaly;
-                    }
                     pointerimage.setTranslationX(pointer_finalx);
                     pointerimage.setTranslationY(pointer_finaly);
                     pointerimage.setVisibility(View.VISIBLE);
@@ -442,9 +480,16 @@ if (errorflg){
                 ////ヨーとピッチが確定して転送先決定した後、指を離したらタッチ判定を起こす////
                 if (touchdown_flag) {//touchdown_flag=trueの時、離れたらその点にタッチ転送
 
-                    if (pointer_y >= by && pointer_y <= buttony && pointer_x >= bx && pointer_x <= buttonx) {
-                        trans_touchevent();
-                        //Log.d("転送", "タッチ転送した。最後：ポイント点" + String.valueOf(pointer_x) + " , " + String.valueOf(y_after));
+                    if (yo_hoseiflg) {
+                        if (pointer_y >= by && pointer_y <= buttony && pointer_x >= bx && pointer_x <= buttonx) {
+                            trans_touchevent();
+                            //Log.d("転送", "タッチ転送した。最後：ポイント点" + String.valueOf(pointer_x) + " , " + String.valueOf(y_after));
+                        }
+                    }else {
+                        if (keisan_y >= by && keisan_y <= buttony && keisan_x >= bx && keisan_x <= buttonx) {
+                            trans_touchevent();
+                            //Log.d("転送", "タッチ転送した。最後：ポイント点" + String.valueOf(pointer_x) + " , " + String.valueOf(y_after));
+                        }
                     }
                     //指を離したらフラグ最初期化→一旦リセット//////
                 }
@@ -668,23 +713,6 @@ if (errorflg){
                     syoki_pointery += 20;
                 }
             }
-        if (yo_hoseiflg) {
-            ///行列計算してθ分回転させる///
-            keisan_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
-            syoki_keisany = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
-        }
-        if (keisan_y < 90) {
-            keisan_y = 90;
-        } else if (keisan_y >= 1350) {
-            keisan_y = 1350;
-        }
-        if (syoki_keisany < 90) {
-            syoki_keisany = 90;
-        } else if (syoki_keisany >= 1350) {
-            syoki_keisany = 1350;
-        }
-
-
     }
     ///x座標を設定する関数////
 
@@ -714,22 +742,6 @@ if (errorflg){
 
             }
 
-             if (yo_hoseiflg) {
-                 ///行列計算してθ分回転させる///
-                 keisan_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
-                 syoki_keisanx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
-
-             }
-             if (keisan_x <= 70) {
-                 keisan_x = 70;
-             } else if (keisan_x >= 1080) {
-                 keisan_x = 1080;
-             }
-             if (syoki_keisanx <= 70) {
-                syoki_keisanx = 70;
-             }else if (syoki_keisanx >= 1080) {
-                 syoki_keisanx = 1080;
-             }
 
         }
     }
