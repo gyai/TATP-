@@ -15,6 +15,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -48,9 +49,6 @@ public class MainActivity extends AppCompatActivity{
         System.loadLibrary("opencv_java3");
     }
 
-    /**
-     * 一応ビルドできる、いらないやつ②つ生成されてた
-     */
     //グローバル変数
     public static int[][] capmatrix = null;//静電容量値
     public static int[] flattermatrix = null;//1次元配列静電容量値
@@ -84,6 +82,8 @@ public class MainActivity extends AppCompatActivity{
     public float keisan_x, keisan_y;//ヨー角調整時使用
     public float syoki_pointerx;//初期位置
     public float syoki_pointery;
+    public float syoki_finalx,syoki_finaly;
+    public float syoki_keisanx, syoki_keisany;
     public float syoki_yo;
     public float pointer_finalx, pointer_finaly;//受け取った最終的なポインタ位置
     public float sa_y;
@@ -156,6 +156,24 @@ public class MainActivity extends AppCompatActivity{
         view = new View(getApplicationContext());
         view = findViewById(R.id.frameLayout);
 
+        ///補正on/off
+        TextView hoseitext = findViewById(R.id.textView2);
+        hoseitext.setTextSize(30);
+        Button onbutton = findViewById(R.id.buttonon);
+        onbutton.setOnClickListener(v -> {
+            yo_hoseiflg = true;
+            task_count = 1;
+            hoseitext.setText("指の向き補正ON");
+
+        });
+        Button offbutton = findViewById(R.id.buttonoff);
+        offbutton.setOnClickListener(v -> {
+            yo_hoseiflg = false;
+            task_count = 1;
+            hoseitext.setText("指の向き補正OFF");
+
+        });
+
     }
 
     ////////////onCreate{}--end//////////////////////////
@@ -203,34 +221,14 @@ public class MainActivity extends AppCompatActivity{
                 if (touchdown_flag) {
                        if (yo_hoseiflg) {
                            //ヨー角を調整する時//
-                           /**
-                           if (keisan_x <= 70) {
-                               keisan_x = 70;
-                           } else if (keisan_x >= 1110) {
-                               keisan_x = 1110;
-                           }
-                           if (keisan_y < 90) {
-                               keisan_y = 90;
-                           } else if (keisan_y >= 1350) {
-                               keisan_y = 1350;
-                           }
+
                            pointer_finalx = keisan_x - 50;
                            pointer_finaly = keisan_y - 50;
                            pointer_kiseki.append(String.valueOf(keisan_x) + " , " + String.valueOf(keisan_y) + " : ");
-                            */
-                           //初期位置ヨー角補正//
-                           /**
-                           pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
-                           pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
-                           if (xmove_flg) {
-                               syoki_pointerx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
-                           }
-                           if (ymove_flg) {
-                               syoki_pointery = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
-                           }
-                           pointer_finalx = pointer_x -50;
-                           pointer_finaly = pointer_y -50;
-                            */
+
+                           syoki_finalx = syoki_keisanx;
+                           syoki_finaly = syoki_keisany;
+
                        } else {
 
                            //ヨー角そのままの時//
@@ -246,39 +244,43 @@ public class MainActivity extends AppCompatActivity{
                            }
                            pointer_kiseki.append(String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y) + " : ");
 
-                           //静電容量保存
-                           saveimageFile();
-                           imagecount += 1;
 
                            pointer_finalx = pointer_x - 50;//受け取った転送先座標から画像の幅/2を引いて、座標を画像の真ん中に。
                            pointer_finaly = pointer_y - 50;
 
+                           if (syoki_pointerx <= 70) {
+                               syoki_pointerx = 70;
+                           } else if (syoki_pointerx >= 1080) {
+                               syoki_pointerx = 1080;
+                           }
+                           if (syoki_pointery < 90) {
+                               syoki_pointery = 90;
+                           } else if (syoki_pointery >= 1350) {
+                               syoki_pointery = 1350;
+                           }
+
+                           syoki_finalx = syoki_pointerx;
+                           syoki_finaly = syoki_pointery;
                        }
+
+                    //静電容量保存
+                    saveimageFile();
+                    imagecount += 1;
+
                     ///ここで、初期位置から微小な範囲(20*20)しか動いてないときは位置を更新せず、初期位置に固定する//
                     if (syoki_pointerx - 5 <= pointer_x && pointer_x <= syoki_pointerx + 5 && syoki_pointery - 5 <= pointer_y && pointer_y <= syoki_pointery + 5) {
-                        pointer_finalx = syoki_pointerx;
-                        pointer_finaly = syoki_pointery;
+                        pointer_finalx = syoki_finalx;
+                        pointer_finaly = syoki_finaly;
                     }
                     pointerimage.setTranslationX(pointer_finalx);
                     pointerimage.setTranslationY(pointer_finaly);
                     pointerimage.setVisibility(View.VISIBLE);
 
 
-                    if (syoki_pointerx <= 70) {
-                        syoki_pointerx = 70;
-                    } else if (syoki_pointerx >= 1080) {
-                        syoki_pointerx = 1080;
-                    }
-                    if (syoki_pointery < 90) {
-                        syoki_pointery = 90;
-                    } else if (syoki_pointery >= 1350) {
-                        syoki_pointery = 1350;
-                    }
-                    /**
-                    waku.setTranslationX(syoki_pointerx - 55);
-                    waku.setTranslationY(syoki_pointery - 55);
+                    waku.setTranslationX(syoki_finalx - 55);
+                    waku.setTranslationY(syoki_finaly - 55);
                     waku.setVisibility(View.VISIBLE);
-                     */
+
                     Log.d("pointer",String.valueOf(pointer_finalx) +" , "+ String.valueOf(pointer_finaly));
                     Log.d("syokipointer",String.valueOf(syoki_pointerx) +" , "+ String.valueOf(syoki_pointery));
 
@@ -286,9 +288,7 @@ public class MainActivity extends AppCompatActivity{
 
                 }else{
                     pointerimage.setVisibility(View.GONE);//指が離れたらポインタ隠す
-                    //waku.setVisibility(View.GONE);
-                    //pointer_finalx = syoki_pointerx;
-                    //pointer_finaly = syoki_pointery;
+                    waku.setVisibility(View.GONE);
                 }
             }
         };
@@ -313,7 +313,6 @@ public class MainActivity extends AppCompatActivity{
 
                     task_starttime = System.nanoTime();//システム起動時のシステム時間
 
-                    //Toast.makeText(MainActivity.this, String.valueOf(task_count+1)+"回目:転送システム起動:指の傾きでポインタ操作可能", Toast.LENGTH_SHORT).show();//ポップアップ的な通知見せる
                     ///長押しタッチ時、フラグ初期化///
                     size_first = size;//初期タッチ時のサイズ
                     size_height_first = size_height;//初期タッチ時のサイズ高さ
@@ -329,13 +328,6 @@ public class MainActivity extends AppCompatActivity{
                     //pointer_x = 500;
                     pointer_y = 600;
 
-                    //pointer_finalx = pointer_x -50;//受け取った転送先座標から画像の幅/2を引いて、座標を画像の真ん中に。
-                    //pointer_finaly = pointer_y - 50;
-
-                    //pointerimage.setTranslationX(pointer_finalx);
-                    //pointerimage.setTranslationY(pointer_finaly);
-                    //Log.d("初期ポインター", String.valueOf(pointerimage.getTranslationX()) + " , " + String.valueOf(pointerimage.getTranslationY()));
-                    //pointer_kiseki.append(String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y) + " : ");
 
                     syoki_pointerx = pointer_x;//初期位置のpointerのx座標
                     syoki_pointery = pointer_y;//y座標
@@ -383,7 +375,7 @@ if (errorflg){
                     double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
                     //Log.d("button座標",String.valueOf(bx)+" , "+String.valueOf(by));
                     task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
-/**
+
                     ///習熟度計算////
                     int rot = task_count+1;
 
@@ -408,8 +400,6 @@ if (errorflg){
                         }
                     }
                     //習熟度計算終わり//
-*/
-
 
                     ///でーた保存///
                     saveFile();
@@ -511,7 +501,7 @@ if (errorflg){
                     Environment.getExternalStorageDirectory();
             File file = new File(
                     extStrageDir.getAbsolutePath()
-                            + "/" + Environment.DIRECTORY_DOWNLOADS,
+                            + "/" + Environment.DIRECTORY_DCIM,
                     fileName);
             FileOutputStream outputStream = new FileOutputStream(file);
             //bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
@@ -519,11 +509,7 @@ if (errorflg){
             writer.write(task_kekka);
             writer.flush();
             writer.close();
-            //FileOutputStream outputStream = openFileOutput(fileName, MODE_PRIVATE);
-            //OutputStreamWriter writer = new OutputStreamWriter(outputStream);
-            //writer.write(task_kekka);
-            //writer.flush();
-            //writer.close();
+
 
         }
         catch (IOException e) {
@@ -543,7 +529,7 @@ if (errorflg){
                     Environment.getExternalStorageDirectory();
             File i_file = new File(
                     extStrageDir.getAbsolutePath()
-                            + "/" + Environment.DIRECTORY_DOWNLOADS,
+                            + "/" + Environment.DIRECTORY_DCIM,
                     image_fileName);
             FileOutputStream outStream = new FileOutputStream(i_file);
             bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
@@ -664,47 +650,41 @@ if (errorflg){
         //sa_y = (syoki_touch_y - move_y) / (float) Math.cos(Math.toRadians(syoki_yo));
 
         //Log.d("sa_y差","first: "+ String.valueOf(touch_y)+" , move: "+String.valueOf(move_y)+ " , 差: " +String.valueOf(s_a_y));
-        if (!yo_hoseiflg){//ヨー補正なし
-        if (!ymove_flg) {
-            if (sa_y < 15 && -25 < sa_y) {//yの移動量が-25、+15の範囲内なら基準速(指の下方向は動かしづらいから)
-                pointer_y = syoki_pointery - (sa_y * 3);
-            } else {//-25以下、+15以上のとき加速(3倍)
-                pointer_y = syoki_pointery - (sa_y * 4);
+
+            if (!ymove_flg) {
+                if (sa_y < 15 && -25 < sa_y) {//yの移動量が-25、+15の範囲内なら基準速(指の下方向は動かしづらいから)
+                    pointer_y = syoki_pointery - (sa_y * 3);
+                } else {//-25以下、+15以上のとき加速(3倍)
+                    pointer_y = syoki_pointery - (sa_y * 4);
+                }
+            } else {//アニメーションフラグtrueの時
+                if (sa_y >= 0) {
+                    //Log.d("アニメーション", "y-0.1");
+                    pointer_y -= 20;
+                    syoki_pointery -= 20;
+                } else {
+                    //Log.d("アニメーション", "y+0.1");
+                    pointer_y += 20;
+                    syoki_pointery += 20;
+                }
             }
-        } else {//アニメーションフラグtrueの時
-            if (sa_y >= 0) {
-                //Log.d("アニメーション", "y-0.1");
-                pointer_y -= 20;
-                syoki_pointery -= 20;
+        if (yo_hoseiflg) {
+            ///行列計算してθ分回転させる///
+            keisan_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
+            syoki_keisany = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
+        }
+        if (keisan_y < 90) {
+            keisan_y = 90;
+        } else if (keisan_y >= 1350) {
+            keisan_y = 1350;
+        }
+        if (syoki_keisany < 90) {
+            syoki_keisany = 90;
+        } else if (syoki_keisany >= 1350) {
+            syoki_keisany = 1350;
+        }
 
-            } else {
-                //Log.d("アニメーション", "y+0.1");
-                pointer_y += 20;
-                syoki_pointery += 20;
 
-            }
-
-
-        }}else{//よー補正あり
-                /**if (yo_hoseiflg) {
-                 ///行列計算してθ分回転させる///
-                 keisan_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
-
-                 }
-                 if (keisan_y < 90) {
-                 keisan_y = 90;
-                 } else if (keisan_y >= 1350) {
-                 keisan_y = 1350;
-                 }
-                 if (syoki_pointery < 90) {
-                 syoki_pointery = 90;
-                 } else if (syoki_pointery >= 1350) {
-                 syoki_pointery = 1350;
-                 }
-                 if (yo_hoseiflg) {
-                 //syoki_pointery = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
-                 }*/
-            }
     }
     ///x座標を設定する関数////
 
@@ -715,7 +695,6 @@ if (errorflg){
         //Log.d("x差","初期タッチx: "+String.valueOf(syoki_touch_x)+" , 移動タッチｘ"+String.valueOf(move_x));
 
         ///初期位置から30までは差をそのまま。それ以降は加速度的に速度を変えたい//
-        if (!yo_hoseiflg){//よー補正なし
         if (!xmove_flg) {
             if (sa_x < 25 && -25 < sa_x) {//xの移動差がプラマイ25以下なら加速度なし。基準速(2倍)
                 pointer_x = syoki_pointerx - (float) (sa_x * 3);
@@ -734,27 +713,24 @@ if (errorflg){
                 syoki_pointerx -= 20;
 
             }
-        }}else {//よー補正あり
-            /**
+
              if (yo_hoseiflg) {
-             ///行列計算してθ分回転させる///
-             keisan_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
+                 ///行列計算してθ分回転させる///
+                 keisan_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
+                 syoki_keisanx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
 
              }
              if (keisan_x <= 70) {
-             keisan_x = 70;
+                 keisan_x = 70;
              } else if (keisan_x >= 1080) {
-             keisan_x = 1080;
+                 keisan_x = 1080;
              }
-             if (syoki_pointerx <= 70) {
-             syoki_pointerx = 70;
-             } else if (syoki_pointerx >= 1080) {
-             syoki_pointerx = 1080;
-             }*/
-            /**
-             if (yo_hoseiflg) {
-             //syoki_pointerx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
-             }*/
+             if (syoki_keisanx <= 70) {
+                syoki_keisanx = 70;
+             }else if (syoki_keisanx >= 1080) {
+                 syoki_keisanx = 1080;
+             }
+
         }
     }
 
@@ -806,13 +782,7 @@ if (errorflg){
                         //Log.d("xxx", String.valueOf(x_sa) + " , " + String.valueOf(pointer_x) +" , "+String.valueOf(syoki_pointerx));
                         if (-5 <= x_sa && x_sa <= 5 && (pointer_x <= syoki_pointerx - 50 || syoki_pointerx + 50 <= pointer_x)) {//xの位置が変わってなく(プラマイ5以内)、pointerが加速領域に入ってたら
                             xmove_flg = true;//アニメーションフラグtrueに
-                            //Log.d("アニメーション", "xアニメーション入った");
-                            /**
-                            if (pointer_x >= syoki_pointerx + 25) {
-                                pointer_x += 30;
-                            } else {
-                                pointer_x -= 30;
-                            }*/
+
                         } else {
                             xmove_flg = false;
                         }
@@ -824,13 +794,7 @@ if (errorflg){
 
                         if (-5 <= y_sa && y_sa <= 5 && (pointer_y <= syoki_pointery - 50 || syoki_pointery + 50 <= pointer_y)) {//yの位置が変わってなく(プラマイ5以内)、pointerが加速領域に入ってたら
                             ymove_flg = true;//アニメーションフラグtrueに
-                            //Log.d("アニメーション", "yアニメーション入った");
-                            /**
-                            if (pointer_y >= syoki_pointery + 15) {
-                                pointer_y += 30;
-                            } else {
-                                pointer_y -= 30;
-                            }*/
+
                         } else {
                             ymove_flg = false;
                         }

@@ -9,6 +9,9 @@
     <string name="pointer">TODO</string>
     <string name="r_b">r_b</string>
     <string name="waku">TODO</string>
+    <string name="on">指の向き補正ON</string>
+    <string name="off">指の向き補正OFF</string>
+    <string name="hoseitext">指の向き補正OFF</string>
 
 
 </resources>
