@@ -38,6 +38,7 @@ import org.opencv.utils.Converters;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
@@ -48,6 +49,9 @@ public class MainActivity extends AppCompatActivity{
     static {
         System.loadLibrary("opencv_java3");
     }
+//実験用保存先フォルダ名+練習か本番か
+    public String ftext = "3-3";//被験者番号-実験回数
+    public Boolean rensyuflg = true;
 
     //グローバル変数
     public static int[][] capmatrix = null;//静電容量値
@@ -339,10 +343,11 @@ public class MainActivity extends AppCompatActivity{
  }*/
                     //}
 
-                    //静電容量保存
-                    saveimageFile();
-                    imagecount += 1;
-
+                    if (!rensyuflg) {
+                        //静電容量保存
+                        saveimageFile();
+                        imagecount += 1;
+                    }
                     pointerimage.setTranslationX(pointer_finalx);
                     pointerimage.setTranslationY(pointer_finaly);
                     pointerimage.setVisibility(View.VISIBLE);
@@ -451,34 +456,36 @@ if (errorflg){
                     //Log.d("button座標",String.valueOf(bx)+" , "+String.valueOf(by));
                     task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
 
-                    ///習熟度計算////
-                    int rot = task_count+1;
+                    if (rensyuflg) {
+                        ///習熟度計算////
+                        int rot = task_count + 1;
 
-                    for (int i=0; i<35; i++){
-                        if (rot == i) {
-                            sousaarray[i] = sousa_time;
-                        }
-                    }
-
-                    if ((rot % 2) == 0) {
-
-                        syujyukudo[rot] =(sousaarray[rot] / sousaarray[rot/2]) * 100;
-
-                        //Log.d("操作時間", String.valueOf(sousaarray[rot])+" / "+String.valueOf(sousaarray[rot/2]));
-
-                        //Log.d("習熟度", "sousaarray　"+String.valueOf(sousaarray[rot])+"習熟度"+String.valueOf(syujyukudo[rot])+" / "+String.valueOf(syujyukudo[rot-2]));
-                        if (rot >= 2) {
-                            if (Math.floor(syujyukudo[rot]) <= Math.floor(syujyukudo[(rot - 2)]) +3 && Math.floor(syujyukudo[rot]) >= Math.floor(syujyukudo[(rot - 2)]) -3) {
-
-                                Toast.makeText(this, "習熟度発散: ", Toast.LENGTH_SHORT).show();
+                        for (int i = 0; i < 35; i++) {
+                            if (rot == i) {
+                                sousaarray[i] = sousa_time;
                             }
                         }
+
+                        if ((rot % 2) == 0) {
+
+                            syujyukudo[rot] = (sousaarray[rot] / sousaarray[rot / 2]) * 100;
+
+                            //Log.d("操作時間", String.valueOf(sousaarray[rot])+" / "+String.valueOf(sousaarray[rot/2]));
+
+                            //Log.d("習熟度", "sousaarray　"+String.valueOf(sousaarray[rot])+"習熟度"+String.valueOf(syujyukudo[rot])+" / "+String.valueOf(syujyukudo[rot-2]));
+                            if (rot >= 2) {
+                                if (Math.floor(syujyukudo[rot]) <= Math.floor(syujyukudo[(rot - 2)]) + 3 && Math.floor(syujyukudo[rot]) >= Math.floor(syujyukudo[(rot - 2)]) - 3) {
+
+                                    Toast.makeText(this, "習熟度発散: ", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        }
+                        //習熟度計算終わり//
                     }
-                    //習熟度計算終わり//
-
-                    ///でーた保存///
-                    saveFile();
-
+                    if (!rensyuflg) {
+                        ///でーた保存///
+                        saveFile();
+                    }
                     ////1タスク完了後データ等の処理//
                     ///軌跡系変数を初期化or消す//
                     pointer_kiseki = new StringBuilder();//インスタンス再生性してデータ消す
@@ -581,15 +588,20 @@ if (errorflg){
 
         try {
             //text保存
-            File extStrageDir =
-                    Environment.getExternalStorageDirectory();
-            File file = new File(
-                    extStrageDir.getAbsolutePath()
-                            + "/" + Environment.DIRECTORY_DOWNLOADS,
-                    fileName);
+            File extStrageDir =Environment.getExternalStorageDirectory();
+            File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS+ "/"+ftext, fileName);//練習
+            //File file = new File(getApplicationContext().getFilesDir()+"/1", fileName);
+            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS, fileName);//1回目
+            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_ALARMS, fileName);//2
+            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MOVIES, fileName);//3
+            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MUSIC, fileName);//4
+            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_NOTIFICATIONS, fileName);//5
+            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_PODCASTS, fileName);//6
+// /data/data/com.example.tatp_practice
+            // /sdcard/Download
             FileOutputStream outputStream = new FileOutputStream(file);
-            //bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
             OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+            //FileWriter writer = new FileWriter(file);
             writer.write(task_kekka);
             writer.flush();
             writer.close();
@@ -609,12 +621,16 @@ if (errorflg){
         try {
 
             //画像保存
-            File extStrageDir =
-                    Environment.getExternalStorageDirectory();
-            File i_file = new File(
-                    extStrageDir.getAbsolutePath()
-                            + "/" + Environment.DIRECTORY_DOWNLOADS,
-                    image_fileName);
+            File extStrageDir =Environment.getExternalStorageDirectory();
+            File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/"+ ftext, image_fileName);//練習
+            //File i_file = new File(getApplicationContext().getFilesDir()+"/1", image_fileName);
+            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS, fileName);//1回目
+            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_ALARMS, fileName);//2
+            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MOVIES, fileName);//3
+            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MUSIC, fileName);//4
+            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_NOTIFICATIONS, fileName);//5
+            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_PODCASTS, fileName);//6
+
             FileOutputStream outStream = new FileOutputStream(i_file);
             bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
             outStream.close();
