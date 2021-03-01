@@ -350,7 +350,7 @@ public class MainActivity extends AppCompatActivity{
 
                     waku.setTranslationX(syoki_finalx);
                     waku.setTranslationY(syoki_finaly);
-                    waku.setVisibility(View.VISIBLE);
+                    //waku.setVisibility(View.VISIBLE);
 
                     Log.d("pointer", String.valueOf(pointer_finalx) + " , " + String.valueOf(pointer_finaly));
                     //Log.d("syokipointer",String.valueOf(syoki_pointerx) +" , "+ String.valueOf(syoki_pointery));
@@ -585,7 +585,7 @@ if (errorflg){
                     Environment.getExternalStorageDirectory();
             File file = new File(
                     extStrageDir.getAbsolutePath()
-                            + "/" + Environment.DIRECTORY_DCIM,
+                            + "/" + Environment.DIRECTORY_DOWNLOADS,
                     fileName);
             FileOutputStream outputStream = new FileOutputStream(file);
             //bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
@@ -613,7 +613,7 @@ if (errorflg){
                     Environment.getExternalStorageDirectory();
             File i_file = new File(
                     extStrageDir.getAbsolutePath()
-                            + "/" + Environment.DIRECTORY_DCIM,
+                            + "/" + Environment.DIRECTORY_DOWNLOADS,
                     image_fileName);
             FileOutputStream outStream = new FileOutputStream(i_file);
             bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
