@@ -38,7 +38,6 @@ import org.opencv.utils.Converters;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
@@ -56,7 +55,7 @@ public class MainActivity extends AppCompatActivity{
     //グローバル変数
     public static int[][] capmatrix = null;//静電容量値
     public static int[] flattermatrix = null;//1次元配列静電容量値
-    public static double after_yo = 0;//OpenCVで求めたヨー角格納用。ピッチトリガーで使う
+    public static double yo = 0;//OpenCVで求めたヨー角格納用。ピッチトリガーで使う
 
 
     public static double final_yo = 0;//最終的なヨー角代入用
@@ -64,7 +63,7 @@ public class MainActivity extends AppCompatActivity{
     public static float size = 0;//楕円サイズ
 
     /////フラグ/////
-    public static Boolean touchdown_flag = false;//押されている間かどうか
+    public static Boolean systemTrigger_flag = false;//押されている間かどうか=転送システムが起動しているか
     public LocalDeviceHandler localDeviceHandler = new LocalDeviceHandler();
     public static Boolean ymove_flg = false;//指の傾きが最大のとき&&0.5秒固定していたら、それより奥に0.5秒間隔で20ピクセルずつ動く判定フラグ
     public static Boolean xmove_flg = false;//指の傾きが最大のとき&&0.5秒固定していたら、それより奥に0.5秒間隔で20ピクセルずつ動く判定フラグ
@@ -98,10 +97,11 @@ public class MainActivity extends AppCompatActivity{
 
     static final int SAIBYOUGA_KANKAKU_MS = 50; //pointerの再描画の間隔（ms）。小さいほどアニメーションが滑らかに。
 
+    //ポインター画像表示用
     public static ImageView pointerimage;
     public static ImageView waku;
 
-    //画像用
+    //OpenCV画像用
     private int[] pix;
     private int r,g,b;//RGBデータ用
 
@@ -123,7 +123,7 @@ public class MainActivity extends AppCompatActivity{
     public int seikoukaisuu = 0;
     public StringBuilder pointer_kiseki = new StringBuilder();
     public String task_kekka;
-    public View view;
+    //public View view;
     public int imagecount = 1;
 
     @Override
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity{
         Collections.shuffle(arrayindex);//35この要素をランダムにシャッフル
         buttonSet();
 
-
+        //ポインター画像と初期位置枠画像の設定///
         ConstraintLayout.LayoutParams imagelp = new ConstraintLayout.LayoutParams(100,100);
         pointerimage = findViewById(R.id.pointerimg);
         pointerimage.setImageResource(R.drawable.pointer);
@@ -158,10 +158,10 @@ public class MainActivity extends AppCompatActivity{
         localDeviceHandler.startHandler();//静電容量リスナー（スレッド）起動
         seidenListener();
 
-        view = new View(getApplicationContext());
-        view = findViewById(R.id.frameLayout);
+        //view = new View(getApplicationContext());
+        //view = findViewById(R.id.frameLayout);
 
-        ///補正on/off
+        ///補正on/offボタン+テキスト設定//
         TextView hoseitext = findViewById(R.id.textView2);
         hoseitext.setTextSize(30);
         Button onbutton = findViewById(R.id.buttonon);
@@ -183,7 +183,7 @@ public class MainActivity extends AppCompatActivity{
 
     ////////////onCreate{}--end//////////////////////////
 
-    /////Tablelayout///////
+
     public void buttonSet() {
         ///呼び出される時、各配列のindexをランダムに取り出して、それに対応する画面上の位置を決定//
         if (task_count <= 34 ){
@@ -208,7 +208,7 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-
+/////////////////ここからタッチ時処理//////////////////////////////////
 
     public double[] sousaarray = new double[35];
     public double[] syujyukudo = new double[35];
@@ -218,43 +218,25 @@ public class MainActivity extends AppCompatActivity{
         AnimationThread animationThread = new AnimationThread();
 
         ///pointer描画を50ミリ秒間隔でアニメーションさせる///////////////
-        ///保の処理で更新されたx,y_afterを受け取って描画するだけ///
+        ///更新されたpointer_x,yを受け取って描画するだけ///
         Handler pointerhandler = new Handler();
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                if (touchdown_flag) {
+                if (systemTrigger_flag) {
                     if (syoki_flg == false) {
-                        if (ymove_flg || xmove_flg) {//アニメーションフラグの時
-                            /**
-                             if (ymove_flg && !xmove_flg) {
-                             pointer_x = syoki_pointerx - kyori_x;
-                             if (yo_hoseiflg) {//補正フラグの時、最終的なpointer座標を回転させる。
-                             pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
-                             }
-                             } else if (!ymove_flg && xmove_flg) {
-                             pointer_y = syoki_pointery - kyori_y;
-                             if (yo_hoseiflg) {//補正フラグの時、最終的なpointer座標を回転させる。
-                             pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
-                             }
-                             }else {
-                             pointer_x = syoki_pointerx - kyori_x;
-                             pointer_y = syoki_pointery - kyori_y;
-                             }*/
-                        } else {
+                        if (!(ymove_flg || xmove_flg)) {//アニメーションフラグじゃない時
                             pointer_x = syoki_pointerx - kyori_x;
                             pointer_y = syoki_pointery - kyori_y;
                             if (yo_hoseiflg) {//補正フラグの時、最終的なpointer座標を回転させる。
                                 pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
                                 pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
                                 Log.d("補正直後", String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y));
+                                //初期地点どうする？？//
                                 //syoki_pointerx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
                                 //syoki_pointery = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
-
                             }
                         }
-
-
                     }else{//初回のみ
                         pointer_x = syoki_pointerx - kyori_x;
                         pointer_y = syoki_pointery - kyori_y;
@@ -270,9 +252,7 @@ public class MainActivity extends AppCompatActivity{
                         syoki_flg = false;
                     }
 
-
-
-
+                    ///ポインター画面外に行かないように閾値設定///
                     if (!yo_hoseiflg) {
                         //ヨー角そのままの時//
                         if (pointer_x <= 70) {
@@ -341,43 +321,44 @@ public class MainActivity extends AppCompatActivity{
  pointer_finalx = syoki_finalx;
  pointer_finaly = syoki_finaly;
  }*/
-                    //}
 
                     if (!rensyuflg) {
-                        //静電容量保存
+                        //静電容量画像保存
+        /////imageView配列に保管して、タスク終了時(text保存時と同じタイミング)に移動させたい
                         saveimageFile();
                         imagecount += 1;
                     }
+
+                    //ポインター,初期枠画像位置設定+表示//
                     pointerimage.setTranslationX(pointer_finalx);
                     pointerimage.setTranslationY(pointer_finaly);
                     pointerimage.setVisibility(View.VISIBLE);
-
 
                     waku.setTranslationX(syoki_finalx);
                     waku.setTranslationY(syoki_finaly);
                     //waku.setVisibility(View.VISIBLE);
 
-                    Log.d("pointer", String.valueOf(pointer_finalx) + " , " + String.valueOf(pointer_finaly));
+                    //Log.d("pointer", String.valueOf(pointer_finalx) + " , " + String.valueOf(pointer_finaly));
                     //Log.d("syokipointer",String.valueOf(syoki_pointerx) +" , "+ String.valueOf(syoki_pointery));
 
-                    pointerhandler.postDelayed(this, SAIBYOUGA_KANKAKU_MS);//0.05秒間隔でアニメーションしてる
+                    pointerhandler.postDelayed(this, SAIBYOUGA_KANKAKU_MS);//0.05秒間隔でハンドラ開始してアニメーションしてる
 
-                }else{
+                }else{//指が離れている時
                     pointerimage.setVisibility(View.GONE);//指が離れたらポインタ隠す
                     waku.setVisibility(View.GONE);
                 }
             }
         };
 
+        ////タッチ時トリガー:0.5秒長押ししたらトリガー起動したいので長押しハンドラ挟む///
         long LONG_PRESS_TIME = 500;    // 長押し時間（ミリ秒）
         Handler long_press_handler = new Handler();
         Runnable long_press_receiver = new Runnable() {
             @Override
             public void run()
             {
-                ///タッチダウン後0.3秒後、サイズ20以上なら起動
-                //森先生起動しないので30以上の時40°以下のとき起動に→自分の人差し指の大きさくらい
-                if (size >= 30 && touchdown_flag == false) {//タッチした時の輪郭サイズが20以上=指の腹で押されたならシステム開始
+                ///タッチダウン後0.5秒後、サイズ30以上なら起動→サイズの微調整は必要かも
+                if (size >= 30 && systemTrigger_flag == false) {//タッチした時の輪郭サイズが30以上=指の腹で押されたならシステム開始
 
                     ///初期タッチ時系変数///
                     syoki_touch_x = e.getX();//初期位置計算でのみ使うタッチX座標
@@ -389,109 +370,99 @@ public class MainActivity extends AppCompatActivity{
                     kyori_y = 0;
                     kyori_x = 0;
 
+                    //size_first = size;//初期タッチ時のサイズ
+                    //size_height_first = size_height;//初期タッチ時のサイズ高さ
+
+                    ///データ保存用、システム起動時に1タスクの操作時間計測用に時間計測///
                     task_starttime = System.nanoTime();//システム起動時のシステム時間
 
-                    ///長押しタッチ時、フラグ初期化///
-                    size_first = size;//初期タッチ時のサイズ
-                    size_height_first = size_height;//初期タッチ時のサイズ高さ
-
-
                     ///初期タッチ時系変数///
-                  //  Log.d("ヨー", String.valueOf(after_yo)+ " , "+String.valueOf(box.angle));
-                    syoki_yo = (float)after_yo;
-                    float tan_theta = (float)Math.tan(Math.toRadians(syoki_yo));
+                  syoki_yo = (float) yo;
+                  float tan_theta = (float)Math.tan(Math.toRadians(syoki_yo));
 
                     //タッチした際のポインター初期位置表示//
                     pointer_x = syoki_touch_x - ((syoki_touch_y - 600) * tan_theta);
-                    //pointer_x = 500;
-                    pointer_y = 600;
+                    pointer_y = 600;//指の方向上の画面高さ半分くらいの位置に表示させたい
 
                     syoki_pointerx = pointer_x;//初期位置のpointerのx座標
                     syoki_pointery = pointer_y;//y座標
-                    //pointerimage.setVisibility(View.VISIBLE);
 
-                    touchdown_flag = true;//touch_downをtrueにするのはここだけ→システム起動はここだけ
+                    systemTrigger_flag = true;//システムトリガーフラグをtrueにするのはここだけ→システム起動はここだけ
                     syoki_flg = true;
                     //ポインター移動ハンドラ起動
-                    pointerhandler.post(runnable);
+                    pointerhandler.post(runnable);//ポインター描画ハンドラon
                     animationThread.start();//アニメーションスレッドをon
 
                 }
             }
         };
-if (errorflg){
-    Toast.makeText(getApplicationContext(), "指が認識されませんやり直してください:画面端に寄りすぎです", Toast.LENGTH_SHORT).show();
-    errorflg=false;
-}
 
+
+//楕円形が認識されなかったら、指を中心に戻すよう指示//
+        if (errorflg) {
+            Toast.makeText(getApplicationContext(), "指が認識されませんやり直してください:画面端に寄りすぎです", Toast.LENGTH_SHORT).show();
+            errorflg = false;
+        }
 
         switch (e.getAction()) {
 /////////タッチダウン////////////
             case MotionEvent.ACTION_DOWN:
 
-                long_press_handler.postDelayed( long_press_receiver, LONG_PRESS_TIME);       // 0.3秒長押し判定
+                long_press_handler.postDelayed( long_press_receiver, LONG_PRESS_TIME);  // 0.5秒長押し判定
 
                 break;
 
 //////タッチアップ////////
             case (MotionEvent.ACTION_UP):
-                //Log.d("タッチアップ","タッチアップ");
-                ////ヨーとピッチが確定して転送先決定した後、指を離したらタッチ判定を起こす////
-                if (touchdown_flag) {//touchdown_flag=trueの時、離れたらその点にタッチ転送
-                    ////データ保存用////
+
+                if (systemTrigger_flag) {//systemTrigger_flag=trueの時、離れたらその点にタッチ転送
+
+                    ////データ保存用：操作終了時間////
                     task_endtime = System.nanoTime();//システム終了時間計測
 
-                    //////////////////
                     if (by <= pointer_finaly+50 && pointer_finaly+50 <= buttony && bx <= pointer_finalx +50 && pointer_finalx+50 <= buttonx){
                     //if (pointer_finaly >= by && pointer_y <= buttony && pointer_x >= bx && pointer_x <= buttonx) {
+                        //データ保存用：成功回数カウント
                         seikoukaisuu += 1;
                         Log.d("seikou","システムタッチ成功");
                         trans_touchevent();
-
-                        //Log.d("転送", "タッチ転送した。最後：ポイント点" + String.valueOf(pointer_x) + " , " + String.valueOf(y_after));
                     }
-                    touchdown_flag = false;
-
-                    double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
-                    //Log.d("button座標",String.valueOf(bx)+" , "+String.valueOf(by));
-                    task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
+                    //システムトリガー終了し、諸々の処理を動かさないように//
+                    systemTrigger_flag = false;
 
                     if (rensyuflg) {
                         ///習熟度計算////
                         int rot = task_count + 1;
-
                         for (int i = 0; i < 35; i++) {
                             if (rot == i) {
                                 sousaarray[i] = sousa_time;
                             }
                         }
-
                         if ((rot % 2) == 0) {
-
                             syujyukudo[rot] = (sousaarray[rot] / sousaarray[rot / 2]) * 100;
-
-                            //Log.d("操作時間", String.valueOf(sousaarray[rot])+" / "+String.valueOf(sousaarray[rot/2]));
-
-                            //Log.d("習熟度", "sousaarray　"+String.valueOf(sousaarray[rot])+"習熟度"+String.valueOf(syujyukudo[rot])+" / "+String.valueOf(syujyukudo[rot-2]));
                             if (rot >= 2) {
                                 if (Math.floor(syujyukudo[rot]) <= Math.floor(syujyukudo[(rot - 2)]) + 3 && Math.floor(syujyukudo[rot]) >= Math.floor(syujyukudo[(rot - 2)]) - 3) {
-
                                     Toast.makeText(this, "習熟度発散: ", Toast.LENGTH_SHORT).show();
                                 }
                             }
                         }
                         //習熟度計算終わり//
-                    }
-                    if (!rensyuflg) {
+                    }else{
                         ///でーた保存///
+                        double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
+
+                        task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
+
                         saveFile();
+                        //画像データ保存もimageview配列使ってここにしたい（画像データ1万枚近くを操作中に保存するのは処理思い原因になりそう）//
+
+                        ////1タスク完了後データ等の処理//
+                        ///軌跡系変数を初期化or消す//
+                        pointer_kiseki = new StringBuilder();//インスタンス再生成してデータ消す
+                        imagecount = 1;
                     }
-                    ////1タスク完了後データ等の処理//
-                    ///軌跡系変数を初期化or消す//
-                    pointer_kiseki = new StringBuilder();//インスタンス再生性してデータ消す
-                    imagecount = 1;
-                    //結果データ格納、保存//
-                    //Log.d("結果", task_kekka);
+
+                    //1タスク終了//
                     task_count += 1;
                     if (task_count == 35){
                         Toast.makeText(this, "セクション終了:お疲れさまでした", Toast.LENGTH_SHORT).show();
@@ -501,17 +472,16 @@ if (errorflg){
                     buttonSet();
                 }
 
-
+///フラグや変数諸々初期化
                 long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
                 pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
                 pointerimage.setVisibility(View.GONE);
-                touchdown_flag = false;
+                systemTrigger_flag = false;
                 xmove_flg = false;
                 ymove_flg = false;
                 kyori_y = 0;
                 kyori_x = 0;
-
-                animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。
+                animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。→止まってない。改善する
 
 
                 break;
@@ -522,31 +492,77 @@ if (errorflg){
                 break;
 
             default:///上の条件どれにも当てはまらかった時タッチアップと同じ
+                if (systemTrigger_flag) {//systemTrigger_flag=trueの時、離れたらその点にタッチ転送
 
-                ////ヨーとピッチが確定して転送先決定した後、指を離したらタッチ判定を起こす////
-                if (touchdown_flag) {//touchdown_flag=trueの時、離れたらその点にタッチ転送
+                    ////データ保存用：操作終了時間////
+                    task_endtime = System.nanoTime();//システム終了時間計測
 
-                    if (yo_hoseiflg) {
-                        if (pointer_y >= by && pointer_y <= buttony && pointer_x >= bx && pointer_x <= buttonx) {
-                            trans_touchevent();
-                            //Log.d("転送", "タッチ転送した。最後：ポイント点" + String.valueOf(pointer_x) + " , " + String.valueOf(y_after));
-                        }
-                    }else {
-                        if (keisan_y >= by && keisan_y <= buttony && keisan_x >= bx && keisan_x <= buttonx) {
-                            trans_touchevent();
-                            //Log.d("転送", "タッチ転送した。最後：ポイント点" + String.valueOf(pointer_x) + " , " + String.valueOf(y_after));
-                        }
+                    if (by <= pointer_finaly+50 && pointer_finaly+50 <= buttony && bx <= pointer_finalx +50 && pointer_finalx+50 <= buttonx){
+                        //if (pointer_finaly >= by && pointer_y <= buttony && pointer_x >= bx && pointer_x <= buttonx) {
+                        //データ保存用：成功回数カウント
+                        seikoukaisuu += 1;
+                        Log.d("seikou","システムタッチ成功");
+                        trans_touchevent();
                     }
-                    //指を離したらフラグ最初期化→一旦リセット//////
+                    //システムトリガー終了し、諸々の処理を動かさないように//
+                    systemTrigger_flag = false;
+
+                    if (rensyuflg) {
+                        ///習熟度計算////
+                        int rot = task_count + 1;
+                        for (int i = 0; i < 35; i++) {
+                            if (rot == i) {
+                                sousaarray[i] = sousa_time;
+                            }
+                        }
+                        if ((rot % 2) == 0) {
+                            syujyukudo[rot] = (sousaarray[rot] / sousaarray[rot / 2]) * 100;
+                            if (rot >= 2) {
+                                if (Math.floor(syujyukudo[rot]) <= Math.floor(syujyukudo[(rot - 2)]) + 3 && Math.floor(syujyukudo[rot]) >= Math.floor(syujyukudo[(rot - 2)]) - 3) {
+                                    Toast.makeText(this, "習熟度発散: ", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        }
+                        //習熟度計算終わり//
+                    }else{
+                        ///でーた保存///
+                        double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
+
+                        task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
+
+                        saveFile();
+                        //画像データ保存もimageview配列使ってここにしたい（画像データ1万枚近くを操作中に保存するのは処理思い原因になりそう）//
+
+                        ////1タスク完了後データ等の処理//
+                        ///軌跡系変数を初期化or消す//
+                        pointer_kiseki = new StringBuilder();//インスタンス再生成してデータ消す
+                        imagecount = 1;
+                    }
+
+                    //1タスク終了//
+                    task_count += 1;
+                    if (task_count == 35){
+                        Toast.makeText(this, "セクション終了:お疲れさまでした", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(getApplication(), SubActivity.class);
+                        startActivity(intent);
+                    }
+                    buttonSet();
                 }
+
+///フラグや変数諸々初期化
                 long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
                 pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
                 pointerimage.setVisibility(View.GONE);
-                touchdown_flag = false;
-                animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。
-
+                systemTrigger_flag = false;
+                xmove_flg = false;
+                ymove_flg = false;
+                kyori_y = 0;
+                kyori_x = 0;
+                animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。→止まってない。改善する
 
         }
+///タッチ時条件分岐終了//
+
         //////button押された時の動き////
         //ボタンの範囲でタッチ判定起きたらよびだされる呼び出される→多分もっとスマートな実装ある
         // lambda式
@@ -557,12 +573,12 @@ if (errorflg){
 
                     //////button押された時の動き////
                     //Log.d("systouch", "systemタッチした");
-                    touchdown_flag = false;
+                    systemTrigger_flag = false;
 
                 }else if (event.getAction() == MotionEvent.ACTION_UP){
                     Log.d("アップ", "システムアップ");
                     ///楕円検出できなかったらこれを呼び出す。全リセット//
-                    touchdown_flag = false;
+                    systemTrigger_flag = false;
                     ymove_flg = false;
                     xmove_flg = false;
                     long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
@@ -643,7 +659,7 @@ if (errorflg){
 
 
     public void trans_touchevent(){//タッチ点転送
-        if (touchdown_flag) {
+        if (systemTrigger_flag) {
             ///// タップなしでonTouchEventを発生させる////////
             MotionEvent trans_event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, pointer_x, pointer_y, 0);
             button.dispatchTouchEvent(trans_event);//ここでbuttonタッチ発生している
@@ -723,7 +739,7 @@ if (errorflg){
                             touchcentx = (float)box.center.x;
                             touchcenty = (float)box.center.y;
                             //Log.d("x,y", String.valueOf(touchcentx) +" , "+String.valueOf(touchcenty));
-                            after_yo = 180 - box.angle;//yoに真上を0として左90の角度しまう
+                            yo = 180 - box.angle;//yoに真上を0として左90の角度しまう
 
                             /////カーソル位置調整//////
                             y_kettei();//返り値:y_after
@@ -731,7 +747,7 @@ if (errorflg){
 
                         } catch (Exception e) {//楕円取得できないときはExceptionできてる
                             //Toast.makeText(getApplicationContext(), "指が認識できません:画面端を触りすぎです",Toast.LENGTH_SHORT).show();
-                            touchdown_flag = false;
+                            systemTrigger_flag = false;
                             trans_touchevent();
                             Log.d("exception", "楕円取得できずキャッチ");
                         }
@@ -851,9 +867,9 @@ if (errorflg){
     ///タッチダウンされたらスレッド開始して、タッチが終わったらやめる//
     class AnimationThread extends Thread{
         @Override public void run() {
-            //Log.d("THreadフラグ" , String.valueOf(touchdown_flag));
-            if (touchdown_flag) {
-                while (touchdown_flag) {
+            //Log.d("THreadフラグ" , String.valueOf(systemTrigger_flag));
+            if (systemTrigger_flag) {
+                while (systemTrigger_flag) {
 
                     try {
                         float startx = move_x;
