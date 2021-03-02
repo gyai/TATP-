@@ -430,6 +430,9 @@ public class MainActivity extends AppCompatActivity{
                     //システムトリガー終了し、諸々の処理を動かさないように//
                     systemTrigger_flag = false;
 
+                    ///でーた保存///
+                    double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
+
                     if (rensyuflg) {
                         ///習熟度計算////
                         int rot = task_count + 1;
@@ -448,8 +451,6 @@ public class MainActivity extends AppCompatActivity{
                         }
                         //習熟度計算終わり//
                     }else{
-                        ///でーた保存///
-                        double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
 
                         task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
 
@@ -507,6 +508,9 @@ public class MainActivity extends AppCompatActivity{
                     //システムトリガー終了し、諸々の処理を動かさないように//
                     systemTrigger_flag = false;
 
+                    ///でーた保存///
+                    double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
+
                     if (rensyuflg) {
                         ///習熟度計算////
                         int rot = task_count + 1;
@@ -525,8 +529,6 @@ public class MainActivity extends AppCompatActivity{
                         }
                         //習熟度計算終わり//
                     }else{
-                        ///でーた保存///
-                        double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
 
                         task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
 
