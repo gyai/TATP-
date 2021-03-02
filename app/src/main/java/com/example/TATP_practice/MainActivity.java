@@ -638,20 +638,22 @@ public class MainActivity extends AppCompatActivity{
         // try-with-resources
         try {
 
-            //画像保存
-            File extStrageDir =Environment.getExternalStorageDirectory();
-            File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/"+ ftext, image_fileName);//練習
-            //File i_file = new File(getApplicationContext().getFilesDir()+"/1", image_fileName);
-            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS, fileName);//1回目
-            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_ALARMS, fileName);//2
-            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MOVIES, fileName);//3
-            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MUSIC, fileName);//4
-            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_NOTIFICATIONS, fileName);//5
-            //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_PODCASTS, fileName);//6
+            if (imagecount == 1 || imagecount%3 == 0) {//imagecountが1か3の倍数の時だけ保存→画像データ量1/3に
+                //画像保存
+                File extStrageDir = Environment.getExternalStorageDirectory();
+                File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + ftext, image_fileName);//練習
+                //File i_file = new File(getApplicationContext().getFilesDir()+"/1", image_fileName);
+                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS, fileName);//1回目
+                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_ALARMS, fileName);//2
+                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MOVIES, fileName);//3
+                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MUSIC, fileName);//4
+                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_NOTIFICATIONS, fileName);//5
+                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_PODCASTS, fileName);//6
 
-            FileOutputStream outStream = new FileOutputStream(i_file);
-            bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
-            outStream.close();
+                FileOutputStream outStream = new FileOutputStream(i_file);
+                bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+                outStream.close();
+            }
         }
         catch (IOException ioExceptione) {
             ioExceptione.printStackTrace();
@@ -659,8 +661,8 @@ public class MainActivity extends AppCompatActivity{
     }
 
 
-
-    public void trans_touchevent(){//タッチ点転送
+///タッチ点転送関数//
+    public void trans_touchevent(){
         if (systemTrigger_flag) {
             ///// タップなしでonTouchEventを発生させる////////
             MotionEvent trans_event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, pointer_x, pointer_y, 0);
@@ -673,7 +675,7 @@ public class MainActivity extends AppCompatActivity{
     }
 
 
-    //////静電容量取得し、ヨー角まで出してpitchトリガーを動かす//////
+    //////静電容量取得し、指の向きyoとsizeを返す。この中のCapImgリスナーでxとyのpointer座標も決定する//////
     public void seidenListener() {
         /////////////////////////---以下静電容量取得したときの処理-----/////////////////////////////
         //静電容量の配列などのデータを取得するリスなー
@@ -760,7 +762,6 @@ public class MainActivity extends AppCompatActivity{
         /////////////静電容量リスナー処理終了。静電容量画像生成の度(50ms秒毎？)起動する。ここで取得するのは「ヨー角」と「輪郭の高さ」////////////
     }
     //y決定//
-
     public void y_kettei() {
 
         sa_y = syoki_touch_y - move_y;
@@ -840,10 +841,6 @@ public class MainActivity extends AppCompatActivity{
          }*/
 
     }
-    public void yohosei() {
-
-
-    }
 
 
     public int[] getPix() {//bitmapに格納するpix配列にRGBデータ代入
@@ -866,7 +863,7 @@ public class MainActivity extends AppCompatActivity{
 
 ///完全別処理を行うアニメーションフラグ管理用Thread/////
     ////並行処理してくれる。主にフラグを管理する目的////
-    ///タッチダウンされたらスレッド開始して、タッチが終わったらやめる//
+    ///タッチダウンされたらスレッド開始して、タッチが終わったらやめる→スレッド止めることできてないっぽいから改善必要//
     class AnimationThread extends Thread{
         @Override public void run() {
             //Log.d("THreadフラグ" , String.valueOf(systemTrigger_flag));
