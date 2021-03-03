@@ -4,11 +4,18 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.model.ZipParameters;
+import net.lingala.zip4j.model.enums.CompressionLevel;
+import net.lingala.zip4j.model.enums.CompressionMethod;
+import net.lingala.zip4j.util.InternalZipConstants;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -21,6 +28,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipOutputStream;
 
 public class SubActivity extends AppCompatActivity {
@@ -32,98 +40,90 @@ public class SubActivity extends AppCompatActivity {
         MainActivity mainActivity = new MainActivity();
         String tsk_filename = mainActivity.ftext;
         Boolean rensyuuflg = mainActivity.rensyuflg;
-///35タスクが終了し画面が遷移したら、データを保存したフォルダを圧縮し、データを削除//
 
-/**
+///35タスクが終了し画面が遷移したら、データを保存したフォルダを圧縮し、データを削除//
         if (rensyuuflg) {
             // ZIP化実施フォルダを取得
-            File dir = new File("/sdcard/Download/" + tsk_filename);
+            //File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + tsk_filename);
 
-            // ZIP保存先を取得
-            File destination = new File("/sdcard/Download");
+            //final File downloadDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + tsk_filename);
 
-            // 圧縮実行
-            compressDirectory(destination, dir);
+            String in = /*Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS+"/" +*/"/sdcard/Download/"+ tsk_filename;
+            String out = /*Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS+"/" + */"/sdcard/Download/"+tsk_filename+".zip";
 
-            //textView.setText("データ圧縮完了");
+//圧縮する対象のファイル
+            File[] files = new File(in).listFiles();
 
+            ZipParameters params = new ZipParameters();
+//圧縮アルゴリズムはDEFLATE
+            params.setCompressionMethod(CompressionMethod.DEFLATE);
+//圧縮レベルは高速
+            params.setCompressionLevel(CompressionLevel.FAST);
+
+//ファイルが存在しなければ新規、存在すれば追加となる
+            ZipFile zip = new ZipFile(out);
+            try {
+                for (File f : files) {
+                    System.out.println(f.getPath());
+
+                    if (f.isDirectory()) {
+                        //addFolder は配下の階層ごと追加する
+                        zip.addFolder(f, params);
+                    } else {
+                        //addFile はファイル単体を追加する
+                        zip.addFile(f, params);
+                    }
+                }
+            } catch (IOException e) {
+                //エラー処理（Zipファイルをを削除するなど）
+            }
+
+            /**
+            ArrayList<File> files
+                    = new ArrayList<File>() {
+                {
+                    add(downloadDir);
+                }
+            };
+
+            String zipFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + tsk_filename;
+            try {
+                ZipFile zipFile = new ZipFile(zipFilePath);
+
+                /** パラメータ
+                ZipParameters params = new ZipParameters();
+                params.setCompressionMethod(CompressionMethod.DEFLATE);
+                params.setCompressionLevel(CompressionLevel.FAST);//圧縮レベルは高速
+
+                /** ファイルの圧縮
+                for (File file : files) {
+                    if (file.isFile())
+                        zipFile.addFile(file, params);
+                    else
+                        zipFile.addFolder(file, params);
+                }
+            }catch (IOException e) {
+                //System.out.println("Most probably wrong password.");
+                e.printStackTrace();
+            }
+            //} catch(ZipException e) {
+                //e.printStackTrace();
+            //}
+        */
         }
- */
         Button bkbutton = findViewById(R.id.b);
         bkbutton.setOnClickListener(v ->
                 finish());
     }
     /**
-     * 指定したフォルダをZIPファイルに圧縮
-     * @param destination ZIP保存先ファイル
-     * @param dir         圧縮対象のルートフォルダパス
-     * @throws IOException
-     */
-    private void compressDirectory(final File destination, final File dir) {
+     * ファイルとフォルダを圧縮する
+     * @param 圧縮するFile
+     * @param zipName 生成されるzipファイルのパス
+     *
+    public void compressFiles(
+            List<File> files, String zipFilePath)
+    {
 
-        // 変数宣言
-        byte[] buf = new byte[1024];
-        ZipOutputStream zos = null;
-        InputStream is = null;
+    }*/
 
-        // ZIP対象フォルダ配下の全ファイルを取得
-        List<File> files = new ArrayList<File>();
-        getFiles(dir, files);
-
-        try {
-            // ZIP出力オブジェクトを取得（日本語の文字化けに対応するために文字コードは Shift-JIS を指定）
-            zos = new ZipOutputStream(
-                    new BufferedOutputStream(new FileOutputStream(destination)), Charset.forName("Shift-JIS"));
-
-            // 全ファイルをZIPに格納
-            for (File file : files) {
-
-                // ZIP化実施ファイルの情報をオブジェクトに設定
-                ZipEntry entry = new ZipEntry(
-                        file.getAbsolutePath().replace(dir.getAbsolutePath() + File.separator, ""));
-                zos.putNextEntry(entry);
-
-                // ZIPファイルに情報を書き込む
-                is = new BufferedInputStream(new FileInputStream(file));
-                int len = 0;
-                while ((len = is.read(buf)) != -1) {
-                    zos.write(buf, 0, len);
-                }
-
-                // ストリームを閉じる
-                is.close();
-            }
-            // 処理の最後にストリームは常に閉じる
-            if (zos != null) {
-                zos.close();
-            }
-            if (is != null) {
-                is.close();
-            }
-        }catch (IOException ioException){
-            //textView.setText("データ圧縮できなかった");
-            Log.d("asyuku","圧縮できなかった");
-        }
-    }
-
-    /**
-     * 指定したフォルダ配下の全ファイルを取得
-     * @param parentDir ファイル取得対象フォルダ
-     * @param files     ファイル一覧
-     */
-    private void getFiles(final File parentDir, final List<File> files) {
-
-        // ファイル取得対象フォルダ直下のファイル,ディレクトリを走査
-        for (File f : parentDir.listFiles()) {
-
-            // ファイルの場合はファイル一覧に追加
-            if (f.isFile()) {
-                files.add(f);
-
-                // ディレクトリの場合は再帰処理
-            } else if (f.isDirectory()) {
-                getFiles(f, files);
-            }
-        }
-    }
 }

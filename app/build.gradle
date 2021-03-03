@@ -41,6 +41,7 @@ dependencies {
     implementation files('libs/libftsp.jar')
     implementation fileTree(dir: 'libs', include: 'libftsp.jar')
     implementation project(path: ':openCVLibrary343')
+    implementation files('libs/zip4j-2.7.0.jar')
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 }
