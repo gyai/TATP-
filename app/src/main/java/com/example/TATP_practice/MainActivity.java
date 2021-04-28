@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity{
         System.loadLibrary("opencv_java3");
     }
 //実験用保存先フォルダ名+練習か本番か
-    public String ftext = "2-1";//被験者番号-実験回数
+    public String ftext = "1-6";//被験者番号-実験回数
     public Boolean rensyuflg = true;
 
     //グローバル変数
@@ -119,6 +119,7 @@ public class MainActivity extends AppCompatActivity{
     //データ保存用//
 
     public int task_count = 0;
+    public String error = "-";
     public long task_starttime;
     public long task_endtime;
     public int seikoukaisuu = 0;
@@ -428,8 +429,11 @@ public class MainActivity extends AppCompatActivity{
                     //if (pointer_finaly >= by && pointer_y <= buttony && pointer_x >= bx && pointer_x <= buttonx) {
                         //データ保存用：成功回数カウント
                         seikoukaisuu += 1;
+                        error = "-";
                         Log.d("seikou","システムタッチ成功");
                         trans_touchevent();
+                    }else{
+                        error = "error";
                     }
                     //システムトリガー終了し、諸々の処理を動かさないように//
                     systemTrigger_flag = false;
@@ -456,7 +460,7 @@ public class MainActivity extends AppCompatActivity{
                         //習熟度計算終わり//
                     }else{
 
-                        task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
+                        task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"エラー: "+error+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
 
                         saveFile();
                         //画像データ保存もimageview配列使ってここにしたい（画像データ1万枚近くを操作中に保存するのは処理思い原因になりそう）//
