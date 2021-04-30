@@ -49,8 +49,8 @@ public class MainActivity extends AppCompatActivity{
         System.loadLibrary("opencv_java3");
     }
 //実験用保存先フォルダ名+練習か本番か
-    public String ftext = "1-6";//被験者番号-実験回数
-    public Boolean rensyuflg = true;
+    public String ftext = "1-1";//被験者番号-実験回数
+    public Boolean rensyuflg = false;
 
     //グローバル変数
     public static int[][] capmatrix = null;//静電容量値
@@ -119,7 +119,6 @@ public class MainActivity extends AppCompatActivity{
     //データ保存用//
 
     public int task_count = 0;
-    public String error = "-";
     public long task_starttime;
     public long task_endtime;
     public int seikoukaisuu = 0;
@@ -169,14 +168,14 @@ public class MainActivity extends AppCompatActivity{
         Button onbutton = findViewById(R.id.buttonon);
         onbutton.setOnClickListener(v -> {
             yo_hoseiflg = true;
-            task_count = 0;
+            task_count = 1;
             hoseitext.setText("指の向き補正ON");
 
         });
         Button offbutton = findViewById(R.id.buttonoff);
         offbutton.setOnClickListener(v -> {
             yo_hoseiflg = false;
-            task_count = 0;
+            task_count = 1;
             hoseitext.setText("指の向き補正OFF");
 
         });
@@ -228,10 +227,10 @@ public class MainActivity extends AppCompatActivity{
                 if (systemTrigger_flag) {
                     if (syoki_flg == false) {
                         if (!animation_flg) {//アニメーションフラグじゃない時
-                            pointer_x = syoki_pointerx - kyori_x ;
+                            pointer_x = syoki_pointerx - kyori_x;
                             pointer_y = syoki_pointery - kyori_y;
                             if (yo_hoseiflg) {//補正フラグの時、最終的なpointer座標を回転させる。
-                                pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y)) + 200;
+                                pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
                                 pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
                                 Log.d("補正直後", String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y));
                                 //初期地点どうする？？//
@@ -240,22 +239,18 @@ public class MainActivity extends AppCompatActivity{
                             }
                         }
                     }else{//初回のみ
-                        /**
                         pointer_x = syoki_pointerx - kyori_x;
                         pointer_y = syoki_pointery - kyori_y;
                         if (yo_hoseiflg) {//補正フラグの時、最終的なpointer座標を回転させる。
                             pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
                             pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
-                            Log.d("補正直後(flg=true)", String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y)+": "+String.valueOf(syoki_pointerx) + " , " + String.valueOf(syoki_pointery));
+                            Log.d("補正直後", String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y));
                             //syoki_pointerx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
                             //syoki_pointery = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
-                        }*/
+                        }
                         syoki_pointerx = pointer_x;
                         syoki_pointery = pointer_y;
-                        Log.d("補正直後(flg=true)", String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y)+": "+String.valueOf(syoki_pointerx) + " , " + String.valueOf(syoki_pointery));
-                        if (sa_x <=-5 || sa_x <= 5 || sa_y <= -5 || sa_y <= 5) {//指を少しでも動かしたら補正をかけ始める
-                            syoki_flg = false;
-                        }
+                        syoki_flg = false;
                     }
 
                     ///ポインター画面外に行かないように閾値設定///
@@ -290,33 +285,35 @@ public class MainActivity extends AppCompatActivity{
                         syoki_finalx = syoki_pointerx - 55;
                         syoki_finaly = syoki_pointery - 55;
                     }else{
-                        if (pointer_x <= 50) {
-                            pointer_x = 50;
-                        } else if (pointer_x >= 1030) {
-                            pointer_x = 1030;
+
+                        //ヨー角そのままの時//
+                        if (pointer_x <= -250) {
+                            pointer_x = -250;
+                        } else if (pointer_x >= 730) {
+                            pointer_x = 730;
                         }
-                        if (pointer_y < 50) {
-                            pointer_y = 50;
+                        if (pointer_y < 90) {
+                            pointer_y = 90;
                         } else if (pointer_y >= 1350) {
                             pointer_y = 1350;
                         }
                         pointer_kiseki.append(String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y) + " : ");
 
-                        if (syoki_pointerx <= 65) {
-                            syoki_pointerx = 65;
-                        } else if (syoki_pointerx >= 1045) {
-                            syoki_pointerx = 1045;
+                        if (syoki_pointerx <= -210) {
+                            syoki_pointerx = -210;
+                        } else if (syoki_pointerx >= 780) {
+                            syoki_pointerx = 780;
                         }
-                        if (syoki_pointery < 45) {
-                            syoki_pointery = 45;
-                        } else if (syoki_pointery >= 1355) {
-                            syoki_pointery = 1355;
+                        if (syoki_pointery < 90) {
+                            syoki_pointery = 90;
+                        } else if (syoki_pointery >= 1350) {
+                            syoki_pointery = 1350;
                         }
 
-                        pointer_finalx = pointer_x - 50;//受け取った転送先座標から画像の幅/2を引いて、座標を画像の真ん中に。
+                        pointer_finalx = pointer_x + 250;//受け取った転送先座標から画像の幅/2を引いて、座標を画像の真ん中に。
                         pointer_finaly = pointer_y - 50;
 
-                        syoki_finalx = syoki_pointerx - 55;
+                        syoki_finalx = syoki_pointerx + 245;
                         syoki_finaly = syoki_pointery - 55;
                     }
 /**
@@ -429,11 +426,8 @@ public class MainActivity extends AppCompatActivity{
                     //if (pointer_finaly >= by && pointer_y <= buttony && pointer_x >= bx && pointer_x <= buttonx) {
                         //データ保存用：成功回数カウント
                         seikoukaisuu += 1;
-                        error = "-";
                         Log.d("seikou","システムタッチ成功");
                         trans_touchevent();
-                    }else{
-                        error = "error";
                     }
                     //システムトリガー終了し、諸々の処理を動かさないように//
                     systemTrigger_flag = false;
@@ -460,7 +454,7 @@ public class MainActivity extends AppCompatActivity{
                         //習熟度計算終わり//
                     }else{
 
-                        task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"エラー: "+error+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
+                        task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
 
                         saveFile();
                         //画像データ保存もimageview配列使ってここにしたい（画像データ1万枚近くを操作中に保存するのは処理思い原因になりそう）//
@@ -551,7 +545,7 @@ public class MainActivity extends AppCompatActivity{
                     }
 
                     //1タスク終了//
-                    //task_count += 1;
+                    task_count += 1;
                     if (task_count == 35){
                         Toast.makeText(this, "セクション終了:お疲れさまでした", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(getApplication(), SubActivity.class);
@@ -806,7 +800,6 @@ public class MainActivity extends AppCompatActivity{
         sa_y = syoki_touch_y - move_y;
 
         if (!animation_flg) {
-
             if (sa_y < 15 && -25 < sa_y) {//yの移動量が-25、+15の範囲内なら基準速(指の下方向は動かしづらいから)
                 kyori_y = (float) (sa_y * 3);
                 //pointer_y = syoki_pointery - (sa_y * 3);//(sa_y * 3)が(float)kyori
