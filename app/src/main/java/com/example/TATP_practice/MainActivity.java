@@ -135,6 +135,17 @@ public class MainActivity extends AppCompatActivity{
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);//同上
         setContentView(R.layout.activity_main);
 
+        //start画面から情報受け取り
+        Intent intent = this.getIntent();
+        String statustext = intent.getStringExtra("statusText");
+        Boolean practiceflag = intent.getBooleanExtra("practice",false);
+        TextView text = findViewById(R.id.textView2);
+        text.setTextSize(30);
+        if (practiceflag) {
+            text.setText("練習中"+statustext);
+        }else{
+            text.setText("本実験中"+statustext);
+        }
         //ランダムな位置にボタン//
         for (int a=0; a<35; a++) {
             arrayindex.add(a);//0~34まで
@@ -162,23 +173,8 @@ public class MainActivity extends AppCompatActivity{
         //view = new View(getApplicationContext());
         //view = findViewById(R.id.frameLayout);
 
-        ///補正on/offボタン+テキスト設定//
-        TextView hoseitext = findViewById(R.id.textView2);
-        hoseitext.setTextSize(30);
-        Button onbutton = findViewById(R.id.buttonon);
-        onbutton.setOnClickListener(v -> {
-            yo_hoseiflg = true;
-            task_count = 1;
-            hoseitext.setText("指の向き補正ON");
 
-        });
-        Button offbutton = findViewById(R.id.buttonoff);
-        offbutton.setOnClickListener(v -> {
-            yo_hoseiflg = false;
-            task_count = 1;
-            hoseitext.setText("指の向き補正OFF");
 
-        });
 
     }
 
