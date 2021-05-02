@@ -138,10 +138,10 @@ public class MainActivity extends AppCompatActivity{
         //start画面から情報受け取り
         Intent intent = this.getIntent();
         String statustext = intent.getStringExtra("statusText");
-        Boolean practiceflag = intent.getBooleanExtra("practice",false);
+        rensyuflg = intent.getBooleanExtra("practice",false);
         TextView text = findViewById(R.id.textView2);
         text.setTextSize(30);
-        if (practiceflag) {
+        if (rensyuflg) {
             text.setText("練習中"+statustext);
         }else{
             text.setText("本実験中"+statustext);
