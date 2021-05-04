@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity{
 //実験用保存先フォルダ名+練習か本番か
     public String ftext = "1-1";//被験者番号-実験回数
     public Boolean rensyuflg = false;
+    public String statustext;
 
     //グローバル変数
     public static int[][] capmatrix = null;//静電容量値
@@ -70,8 +71,6 @@ public class MainActivity extends AppCompatActivity{
     public Boolean animation_flg = false;
     public Boolean errorflg = false;//楕円が認識されなかった時用
 
-    public Boolean yo_hoseiflg = false;//ヨー角の傾きを補正して真上方向にするかどうか。trueなら補正をかける
-    public Boolean syoki_flg = true;
     ///OpenCV///
     public RotatedRect box;
     public Bitmap bmpimage;
@@ -124,9 +123,8 @@ public class MainActivity extends AppCompatActivity{
     public int seikoukaisuu = 0;
     public StringBuilder pointer_kiseki = new StringBuilder();
     public String task_kekka;
-    //public View view;
     public int imagecount = 1;
-
+////////////onCreate()-start/////////////////////
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -135,9 +133,13 @@ public class MainActivity extends AppCompatActivity{
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);//同上
         setContentView(R.layout.activity_main);
 
-        //start画面から情報受け取り
+        /*
+        start画面から情報受け取り
+        被験者番号-セクション番号->statustext
+        練習か本番か->rensyuflg(デフォルトは本番(true))
+        */
         Intent intent = this.getIntent();
-        String statustext = intent.getStringExtra("statusText");
+        statustext = intent.getStringExtra("statusText");
         rensyuflg = intent.getBooleanExtra("practice",false);
         TextView text = findViewById(R.id.textView2);
         text.setTextSize(30);
@@ -146,11 +148,20 @@ public class MainActivity extends AppCompatActivity{
         }else{
             text.setText("本実験中"+statustext);
         }
+        
+        layoutSetting(); //ボタンと画像などの見た目諸々設定関数
+        
+        //タッチ時に指の接触面の大きさを計測したいので、最初にリスナー起動必要あり//
+        localDeviceHandler.startHandler();//静電容量リスナー（スレッド）起動
+        seidenListener();
+    }
+
+    public void layoutSetting(){
         //ランダムな位置にボタン//
         for (int a=0; a<35; a++) {
             arrayindex.add(a);//0~34まで
         }
-        Collections.shuffle(arrayindex);//35この要素をランダムにシャッフル
+        Collections.shuffle(arrayindex);//35個の要素をランダムにシャッフル
         buttonSet();
 
         //ポインター画像と初期位置枠画像の設定///
@@ -165,24 +176,10 @@ public class MainActivity extends AppCompatActivity{
         waku.setImageResource(R.drawable.waku);
         waku.setLayoutParams(wakulp);
         waku.setVisibility(View.GONE);
-
-
-        localDeviceHandler.startHandler();//静電容量リスナー（スレッド）起動
-        seidenListener();
-
-        //view = new View(getApplicationContext());
-        //view = findViewById(R.id.frameLayout);
-
-
-
-
     }
 
-    ////////////onCreate{}--end//////////////////////////
-
-
     public void buttonSet() {
-        ///呼び出される時、各配列のindexをランダムに取り出して、それに対応する画面上の位置を決定//
+        ///(呼び出される時(初回とタスク終了時点で呼ばれる)、各配列のindexをランダムに取り出して、それに対応する画面上の位置を決定)//
         if (task_count <= 34 ){
             //randomButton設定
             Resources res = getResources();
@@ -204,8 +201,9 @@ public class MainActivity extends AppCompatActivity{
             buttony = by + bheight;
         }
     }
+////////////onCreate{}--end//////////////////////
 
-/////////////////ここからタッチ時処理//////////////////////////////////
+////////////onTouchEvent()-start////////////////////////
 
     public double[] sousaarray = new double[35];
     public double[] syujyukudo = new double[35];
@@ -221,107 +219,46 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void run() {
                 if (systemTrigger_flag) {
-                    if (syoki_flg == false) {
-                        if (!animation_flg) {//アニメーションフラグじゃない時
-                            pointer_x = syoki_pointerx - kyori_x;
-                            pointer_y = syoki_pointery - kyori_y;
-                            if (yo_hoseiflg) {//補正フラグの時、最終的なpointer座標を回転させる。
-                                pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
-                                pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
-                                Log.d("補正直後", String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y));
-                                //初期地点どうする？？//
-                                //syoki_pointerx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
-                                //syoki_pointery = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
-                            }
-                        }
-                    }else{//初回のみ
+
+                    if (!animation_flg) {//アニメーションフラグじゃない時
                         pointer_x = syoki_pointerx - kyori_x;
                         pointer_y = syoki_pointery - kyori_y;
-                        if (yo_hoseiflg) {//補正フラグの時、最終的なpointer座標を回転させる。
-                            pointer_x = (float) ((Math.cos(Math.toRadians(syoki_yo)) * pointer_x) + (-Math.sin(Math.toRadians(syoki_yo)) * pointer_y));
-                            pointer_y = (float) ((Math.sin(Math.toRadians(syoki_yo)) * pointer_x) + (Math.cos(Math.toRadians(syoki_yo)) * pointer_y));
-                            Log.d("補正直後", String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y));
-                            //syoki_pointerx = (float) ((Math.cos(Math.toRadians(syoki_yo)) * syoki_pointerx) + (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
-                            //syoki_pointery = (float) ((Math.sin(Math.toRadians(syoki_yo)) * syoki_pointerx) + (Math.cos(Math.toRadians(syoki_yo)) * syoki_pointery));
-                        }
-                        syoki_pointerx = pointer_x;
-                        syoki_pointery = pointer_y;
-                        syoki_flg = false;
                     }
 
-                    ///ポインター画面外に行かないように閾値設定///
-                    if (!yo_hoseiflg) {
-                        //ヨー角そのままの時//
-                        if (pointer_x <= 50) {
-                            pointer_x = 50;
-                        } else if (pointer_x >= 1030) {
-                            pointer_x = 1030;
-                        }
-                        if (pointer_y < 50) {
-                            pointer_y = 50;
-                        } else if (pointer_y >= 1350) {
-                            pointer_y = 1350;
-                        }
-                        pointer_kiseki.append(String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y) + " : ");
-
-                        if (syoki_pointerx <= 65) {
-                            syoki_pointerx = 65;
-                        } else if (syoki_pointerx >= 1045) {
-                            syoki_pointerx = 1045;
-                        }
-                        if (syoki_pointery < 45) {
-                            syoki_pointery = 45;
-                        } else if (syoki_pointery >= 1355) {
-                            syoki_pointery = 1355;
-                        }
-
-                        pointer_finalx = pointer_x - 50;//受け取った転送先座標から画像の幅/2を引いて、座標を画像の真ん中に。
-                        pointer_finaly = pointer_y - 50;
-
-                        syoki_finalx = syoki_pointerx - 55;
-                        syoki_finaly = syoki_pointery - 55;
-                    }else{
-
-                        //ヨー角そのままの時//
-                        if (pointer_x <= -250) {
-                            pointer_x = -250;
-                        } else if (pointer_x >= 730) {
-                            pointer_x = 730;
-                        }
-                        if (pointer_y < 90) {
-                            pointer_y = 90;
-                        } else if (pointer_y >= 1350) {
-                            pointer_y = 1350;
-                        }
-                        pointer_kiseki.append(String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y) + " : ");
-
-                        if (syoki_pointerx <= -210) {
-                            syoki_pointerx = -210;
-                        } else if (syoki_pointerx >= 780) {
-                            syoki_pointerx = 780;
-                        }
-                        if (syoki_pointery < 90) {
-                            syoki_pointery = 90;
-                        } else if (syoki_pointery >= 1350) {
-                            syoki_pointery = 1350;
-                        }
-
-                        pointer_finalx = pointer_x + 250;//受け取った転送先座標から画像の幅/2を引いて、座標を画像の真ん中に。
-                        pointer_finaly = pointer_y - 50;
-
-                        syoki_finalx = syoki_pointerx + 245;
-                        syoki_finaly = syoki_pointery - 55;
+                    ///ポインターが画面外に行かないように最終的な見た目の閾値設定///
+                    
+                    //ヨー角そのままの時//
+                    if (pointer_x <= 50) {
+                        pointer_x = 50;
+                    } else if (pointer_x >= 1030) {
+                        pointer_x = 1030;
                     }
-/**
- ///ここで、初期位置から微小な範囲(20*20)しか動いてないときは位置を更新せず、初期位置に固定する//
- if (syoki_pointerx - 5 <= pointer_x && pointer_x <= syoki_pointerx + 5 && syoki_pointery - 5 <= pointer_y && pointer_y <= syoki_pointery + 5) {
- pointer_finalx = syoki_finalx;
- pointer_finaly = syoki_finaly;
- }*/
+                    if (pointer_y < 50) {
+                        pointer_y = 50;
+                    } else if (pointer_y >= 1350) {
+                        pointer_y = 1350;
+                    }
+                    pointer_kiseki.append(String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y) + " : "); //ポインター軌跡取得
+
+                    if (syoki_pointerx <= 65) {
+                        syoki_pointerx = 65;
+                    } else if (syoki_pointerx >= 1045) {
+                        syoki_pointerx = 1045;
+                    }
+                    if (syoki_pointery < 45) {
+                        syoki_pointery = 45;
+                    } else if (syoki_pointery >= 1355) {
+                        syoki_pointery = 1355;
+                    }
+
+                    pointer_finalx = pointer_x - 50;//受け取った転送先座標からポインター画像の幅/2を引いて、座標を画像の真ん中に。
+                    pointer_finaly = pointer_y - 50;
+
+                    syoki_finalx = syoki_pointerx - 55;
+                    syoki_finaly = syoki_pointery - 55;
 
                     if (!rensyuflg) {
                         //静電容量画像保存
-        /////imageView配列に保管して、タスク終了時(text保存時と同じタイミング)に移動させたい
                         saveimageFile();
                         imagecount += 1;
                     }
@@ -374,8 +311,8 @@ public class MainActivity extends AppCompatActivity{
                     task_starttime = System.nanoTime();//システム起動時のシステム時間
 
                     ///初期タッチ時系変数///
-                  syoki_yo = (float) yo;
-                  float tan_theta = (float)Math.tan(Math.toRadians(syoki_yo));
+                    syoki_yo = (float) yo;
+                    float tan_theta = (float)Math.tan(Math.toRadians(syoki_yo));
 
                     //タッチした際のポインター初期位置表示//
                     pointer_x = syoki_touch_x - ((syoki_touch_y - 600) * tan_theta);
@@ -385,7 +322,6 @@ public class MainActivity extends AppCompatActivity{
                     syoki_pointery = pointer_y;//y座標
 
                     systemTrigger_flag = true;//システムトリガーフラグをtrueにするのはここだけ→システム起動はここだけ
-                    syoki_flg = true;
                     //ポインター移動ハンドラ起動
                     pointerhandler.post(runnable);//ポインター描画ハンドラon
                     animationThread.start();//アニメーションスレッドをon
@@ -395,7 +331,7 @@ public class MainActivity extends AppCompatActivity{
         };
 
 
-//楕円形が認識されなかったら、指を中心に戻すよう指示//
+        //楕円形が認識されなかったら、指を中心に戻すよう指示//
         if (errorflg) {
             Toast.makeText(getApplicationContext(), "指が認識されませんやり直してください:画面端に寄りすぎです", Toast.LENGTH_SHORT).show();
             errorflg = false;
@@ -471,7 +407,7 @@ public class MainActivity extends AppCompatActivity{
                     buttonSet();
                 }
 
-///フラグや変数諸々初期化
+                ///フラグや変数諸々初期化
                 long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
                 pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
                 pointerimage.setVisibility(View.GONE);
@@ -550,7 +486,7 @@ public class MainActivity extends AppCompatActivity{
                     buttonSet();
                 }
 
-///フラグや変数諸々初期化
+            ///フラグや変数諸々初期化
                 long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
                 pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
                 pointerimage.setVisibility(View.GONE);
@@ -563,7 +499,7 @@ public class MainActivity extends AppCompatActivity{
                 animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。→止まってない。改善する
 
         }
-///タッチ時条件分岐終了//
+        ///タッチ時条件分岐終了//
 
         //////button押された時の動き////
         //ボタンの範囲でタッチ判定起きたらよびだされる呼び出される→多分もっとスマートな実装ある
@@ -592,7 +528,7 @@ public class MainActivity extends AppCompatActivity{
                 Log.d("tag","buttonTouch");
                 return false;
             }
-        });//////button/////
+        });
 
         return false;
     }
@@ -609,15 +545,7 @@ public class MainActivity extends AppCompatActivity{
             //text保存
             File extStrageDir =Environment.getExternalStorageDirectory();
             File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS+ "/"+ftext, fileName);//練習
-            //File file = new File(getApplicationContext().getFilesDir()+"/1", fileName);
-            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS, fileName);//1回目
-            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_ALARMS, fileName);//2
-            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MOVIES, fileName);//3
-            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MUSIC, fileName);//4
-            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_NOTIFICATIONS, fileName);//5
-            //File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_PODCASTS, fileName);//6
-// /data/data/com.example.tatp_practice
-            // /sdcard/Download
+
             FileOutputStream outputStream = new FileOutputStream(file);
             OutputStreamWriter writer = new OutputStreamWriter(outputStream);
             //FileWriter writer = new FileWriter(file);
@@ -643,13 +571,6 @@ public class MainActivity extends AppCompatActivity{
                 //画像保存
                 File extStrageDir = Environment.getExternalStorageDirectory();
                 File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + ftext, image_fileName);//練習
-                //File i_file = new File(getApplicationContext().getFilesDir()+"/1", image_fileName);
-                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS, fileName);//1回目
-                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_ALARMS, fileName);//2
-                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MOVIES, fileName);//3
-                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_MUSIC, fileName);//4
-                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_NOTIFICATIONS, fileName);//5
-                //File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_PODCASTS, fileName);//6
 
                 FileOutputStream outStream = new FileOutputStream(i_file);
                 bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
@@ -676,7 +597,7 @@ public class MainActivity extends AppCompatActivity{
     }
 
 
-    //////静電容量取得し、指の向きyoとsizeを返す。この中のCapImgリスナーでxとyのpointer座標も決定する//////
+//////静電容量取得し、指の向きyoとsizeを返す。この中のCapImgリスナーでxとyのpointer座標も決定する//////
     public void seidenListener() {
         /////////////////////////---以下静電容量取得したときの処理-----/////////////////////////////
         //静電容量の配列などのデータを取得するリスなー
@@ -790,7 +711,7 @@ public class MainActivity extends AppCompatActivity{
         });
         /////////////静電容量リスナー処理終了。静電容量画像生成の度(50ms秒毎？)起動する。ここで取得するのは「ヨー角」と「輪郭の高さ」////////////
     }
-    //y決定//
+    //y座標を設定する関数//
     public void y_kettei() {
 
         sa_y = syoki_touch_y - move_y;
@@ -803,32 +724,7 @@ public class MainActivity extends AppCompatActivity{
                 kyori_y = (float) (sa_y * 4);
                 //pointer_y = syoki_pointery - (sa_y * 4);
             }
-
-        }/** else {//アニメーションフラグtrueの時
-            if (sa_y >= 0) {
-                //kyori_y += 20;
-                pointer_y -= 20;
-                syoki_pointery -= 20;
-            } else {
-                //kyori_y -= 20;
-                pointer_y += 20;
-                syoki_pointery += 20;
-            }
         }
-        */
-        /** else{//補正フラグありでアニメーションの時
-         if (sa_y >= 0) {
-         //Log.d("アニメーション", "y-0.1");
-         pointer_y -= (float) (/*(Math.sin(Math.toRadians(syoki_yo)) * keisan_x) + (Math.cos(Math.toRadians(syoki_yo)) * 20));
-         syoki_pointery -= (float) (/*(Math.sin(Math.toRadians(syoki_yo)) * syoki_keisanx) + (Math.cos(Math.toRadians(syoki_yo)) * 20));
-         } else {
-         //Log.d("アニメーション", "y+0.1");
-         pointer_y += (float) (/*(Math.sin(Math.toRadians(syoki_yo)) * keisan_x) + (Math.cos(Math.toRadians(syoki_yo)) * 20));
-         syoki_pointery += (float) (/*(Math.sin(Math.toRadians(syoki_yo)) * syoki_keisanx) + (Math.cos(Math.toRadians(syoki_yo)) * 20));
-         }
-         }*/
-
-
     }
     ///x座標を設定する関数////
 
@@ -843,37 +739,11 @@ public class MainActivity extends AppCompatActivity{
                 //pointer_x = syoki_pointerx - (float) (sa_x * 4);
                 kyori_x = (float) (sa_x * 4);
             }
-
-        }/** else {//アニメーションフラグtrueの時
-            if (sa_x <= 0) {
-                //Log.d("アニメーション", "x+0.1");
-                pointer_x += 20;
-                syoki_pointerx += 20;
-                //kyori_x -= 20;
-            } else {//移動差が25以上のとき、大きく動かす(3倍){
-                //Log.d("アニメーション", "x-0.1");
-                pointer_x -= 20;
-                syoki_pointerx -= 20;
-                //kyori_x += 20;
-            }
-        }*/
-//この関数で渡すのはkyoriだけ。pointer座標を計算するのは描画スレッド。
-        /**
-         else{//補正フラグありでアニメーションの時
-         if (sa_x <= 0) {
-         pointer_x += (float) ((Math.cos(Math.toRadians(syoki_yo)) * 20) + (-Math.sin(Math.toRadians(syoki_yo)) * keisan_y));
-         syoki_pointerx += (float) ((Math.cos(Math.toRadians(syoki_yo)) * 20) /*+ (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
-         } else {
-
-         pointer_x -= (float) ((Math.cos(Math.toRadians(syoki_yo)) * 20) /*+ (-Math.sin(Math.toRadians(syoki_yo)) * keisan_y));
-         syoki_pointerx -= (float) ((Math.cos(Math.toRadians(syoki_yo)) * 20) /*+ (-Math.sin(Math.toRadians(syoki_yo)) * syoki_pointery));
-         }
-         }*/
-
+        }
     }
 
-
-    public int[] getPix() {//bitmapに格納するpix配列にRGBデータ代入
+    //bitmapに格納するpix配列にRGBデータ代入
+    public int[] getPix() {
         int width = capmatrix[0].length;
         int height = capmatrix.length;
         //pix配列にcapmatrix>=0ならRGBデータ代入
@@ -904,52 +774,28 @@ public class MainActivity extends AppCompatActivity{
                         float startx = move_x;
                         float starty = move_y;
 
-                        //float startx = pointer_x;
-                        //float starty = pointer_y;
-
                         Thread.sleep(500);//指の傾きが固定されているか判定、0.5秒待つ
-
 
                         float endx = move_x;
                         float endy = move_y;
 
-                        //float endx = pointer_x;
-                        //float endy = pointer_y;
-
-
                         //xもっと動かすアニメーション//
                         //0.5秒後のタッチしている指の座標が変わっていなかったら指がほぼ動いていなかったら//
-                        //float size_sa = Math.abs(start - end);
+
                         float x_sa = startx - endx;
-                        //Log.d("サイズ差", String.valueOf(x_sa));
 
                         //yもっと動かすアニメーション//
                         //0.5秒後のタッチしている指の座標が変わっていなかったら指がほぼ動いていなかったら//
                         float y_sa = starty - endy;
-                        //Log.d("サイズ差", String.valueOf(y_sa));
-
+                        
                         //アニメーションフラグ//
                         //0.5秒間指がほぼ動いていない、かつ、ポインターの位置が初期位置からプラマイ５０より外側の時
                         if (((-5 <= x_sa && x_sa <= 5)&&(-5 <= y_sa && y_sa <= 5))&& /*(!(sa_x < 25 && -25 < sa_x) || !(sa_y < 15 && -25 < sa_y))*/ (pointer_x < syoki_pointerx-50||syoki_pointerx+50 < pointer_x || pointer_y < syoki_pointery-50||syoki_pointery+50 < pointer_y)) {
                             animation_flg = true;
-                            /**
-                            if ((pointer_x <= syoki_pointerx - 50 || syoki_pointerx + 50 <= pointer_x)) {//xの位置が変わってなく(プラマイ5以内)、pointerが加速領域に入ってたら
-                                xmove_flg = true;//アニメーションフラグtrueに
 
-                            } else {
-                                xmove_flg = false;
-                            }
-
-                            if ((pointer_y <= syoki_pointery - 50 || syoki_pointery + 50 <= pointer_y)) {//yの位置が変わってなく(プラマイ5以内)、pointerが加速領域に入ってたら
-                                ymove_flg = true;//アニメーションフラグtrueに
-
-                            } else {
-                                ymove_flg = false;
-                            }*/
                         }else{
                             animation_flg = false;
-                            //xmove_flg = false;
-                            //ymove_flg = false;
+
                         }
                     } catch (InterruptedException interruptedException) {
                         Log.d("Thread", "スレッドを停止");
@@ -960,6 +806,6 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
         }
-}
+    }
 
 }
