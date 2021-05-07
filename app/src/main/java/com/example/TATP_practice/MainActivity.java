@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -89,6 +90,8 @@ public class MainActivity extends AppCompatActivity{
     public float syoki_finalx,syoki_finaly;
     public float syoki_keisanx, syoki_keisany;
     public float syoki_yo;
+    public String syoki_hiritu;
+    public String hiritu;
     public float pointer_finalx, pointer_finaly;//受け取った最終的なポインタ位置
     public float sa_y;
     public float sa_x;
@@ -120,10 +123,21 @@ public class MainActivity extends AppCompatActivity{
     public int task_count = 0;
     public long task_starttime;
     public long task_endtime;
-    public int seikoukaisuu = 0;
-    public StringBuilder pointer_kiseki = new StringBuilder();
+    public String error = "-";
+    public int errorcount = 0;
+    public List<String> pointer_kiseki = new ArrayList<>();
     public String task_kekka;
     public int imagecount = 1;
+
+    public  List<String> taskcountlist = new ArrayList<>();
+    public  List<String> targetpointlist = new ArrayList<>();
+    public  List<String> sousatimelist = new ArrayList<>();
+    public  List<String> errorlist = new ArrayList<>();
+    public  List<List<String>> trajectorylist = new ArrayList<>();
+    public  List<List<ImageView>> imagelist = new ArrayList<>();
+    public  List<String> firsttouchpointlist = new ArrayList<>();
+    public  List<String> firstyo_list = new ArrayList<>();
+    public  List<String> firsthiritulist = new ArrayList<>();
 ////////////onCreate()-start/////////////////////
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -238,8 +252,9 @@ public class MainActivity extends AppCompatActivity{
                     } else if (pointer_y >= 1350) {
                         pointer_y = 1350;
                     }
-                    pointer_kiseki.append(String.valueOf(pointer_x) + " , " + String.valueOf(pointer_y) + " : "); //ポインター軌跡取得
-
+                    if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
+                        pointer_kiseki.add(String.valueOf(pointer_x) + "," + String.valueOf(pointer_y)); //ポインター軌跡取得
+                    }
                     if (syoki_pointerx <= 65) {
                         syoki_pointerx = 65;
                     } else if (syoki_pointerx >= 1045) {
@@ -297,8 +312,7 @@ public class MainActivity extends AppCompatActivity{
                     ///初期タッチ時系変数///
                     syoki_touch_x = e.getX();//初期位置計算でのみ使うタッチX座標
                     syoki_touch_y = e.getY();//初期位置計算でのみ使うタッチY座標
-                    //touchcentx_first = touchcentx;//タッチ時の中心x
-                    //touchcenty_first = touchcenty;//タッチ時の中心y
+
                     move_x = 0;
                     move_y = 0;
                     kyori_y = 0;
@@ -312,6 +326,7 @@ public class MainActivity extends AppCompatActivity{
 
                     ///初期タッチ時系変数///
                     syoki_yo = (float) yo;
+                    syoki_hiritu = hiritu;
                     float tan_theta = (float)Math.tan(Math.toRadians(syoki_yo));
 
                     //タッチした際のポインター初期位置表示//
@@ -346,7 +361,7 @@ public class MainActivity extends AppCompatActivity{
                 break;
 
 //////タッチアップ////////
-            case (MotionEvent.ACTION_UP):
+            case MotionEvent.ACTION_UP:
 
                 if (systemTrigger_flag) {
                     //systemTrigger_flag=trueの時、離れたらその点にタッチ転送
@@ -354,55 +369,67 @@ public class MainActivity extends AppCompatActivity{
                     ////データ保存用：操作終了時間////
                     task_endtime = System.nanoTime();//システム終了時間計測
 
+                    ////おインター操作時に指が離れたらタッチ転送->「ボタンがタップされたか」ではなく、「指が離れたときにポインターがターゲットボタン内なら」にしないとエラーが測れない
                     if (by <= pointer_finaly+50 && pointer_finaly+50 <= buttony && bx <= pointer_finalx +50 && pointer_finalx+50 <= buttonx){
-                    //if (pointer_finaly >= by && pointer_y <= buttony && pointer_x >= bx && pointer_x <= buttonx) {
-                        //データ保存用：成功回数カウント
-                        seikoukaisuu += 1;
-                        Log.d("seikou","システムタッチ成功");
+                        Log.d("systemtouch","システムタッチ成功");
+                        trans_touchevent();
+                    }else{
+                        //データ保存用：error回数カウント
+                        errorcount += 1;
+                        error = "error";
+                        Log.d("systemtouch","システムタッチ失敗");
                         trans_touchevent();
                     }
                     //システムトリガー終了し、諸々の処理を動かさないように//
                     systemTrigger_flag = false;
 
+                    //1タスク終了//
+                    task_count += 1;
+
                     ///でーた保存///
-                    double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
 
                     if (rensyuflg) {
                         ///習熟度計算////
-                        int rot = task_count + 1;
-                        for (int i = 0; i < 35; i++) {
-                            if (rot == i) {
-                                sousaarray[i] = sousa_time;
-                            }
-                        }
-                        if ((rot % 2) == 0) {
-                            syujyukudo[rot] = (sousaarray[rot] / sousaarray[rot / 2]) * 100;
-                            if (rot >= 2) {
-                                if (Math.floor(syujyukudo[rot]) <= Math.floor(syujyukudo[(rot - 2)]) + 3 && Math.floor(syujyukudo[rot]) >= Math.floor(syujyukudo[(rot - 2)]) - 3) {
-                                    Toast.makeText(this, "習熟度発散: ", Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        }
-                        //習熟度計算終わり//
+                        syujyuku_do();
                     }else{
+                        dataOfTask(); //1タスク毎の諸々のデータを保存
 
-                        task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
-
-                        saveFile();
+                        //saveFile();
                         //画像データ保存もimageview配列使ってここにしたい（画像データ1万枚近くを操作中に保存するのは処理思い原因になりそう）//
-
-                        ////1タスク完了後データ等の処理//
-                        ///軌跡系変数を初期化or消す//
-                        pointer_kiseki = new StringBuilder();//インスタンス再生成してデータ消す
-                        imagecount = 1;
                     }
 
-                    //1タスク終了//
-                    task_count += 1;
+
                     if (task_count == 35){
                         Toast.makeText(this, "セクション終了:お疲れさまでした", Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(getApplication(), SubActivity.class);
-                        startActivity(intent);
+                        Intent finishintent = new Intent(getApplication(), SubActivity.class);
+                        //データセット
+                        /*
+                        必要な初期情報
+                        ・DBに保存する1セクション分のテキストデータ(被験者情報、タスク番号、ターゲット座標、操作時間、エラー、ポインター軌跡、初期指座標、初期指ヨー角、初期指の長軸短軸)
+                        ・保存する画像データ（静電容量画像）
+                         */
+                        //被験者情報、(1セクション＝全体通して更新されない)
+                        finishintent.putExtra("statusText",statustext);
+                        // タスク番号、（３５個分＝リストに格納して渡さないとだめ。。？->putStringArrayListExtraなどで可能）
+                        finishintent.putStringArrayListExtra("taskCount",(ArrayList)taskcountlist);
+                        // ターゲット座標(x,y)、（３５個分）
+                        finishintent.putStringArrayListExtra("targetPoint",(ArrayList)targetpointlist);
+                        // 操作時間、（３５個分）
+                        finishintent.putStringArrayListExtra("sousaTime",(ArrayList)sousatimelist);
+                        // エラー、（３５個分）
+                        finishintent.putStringArrayListExtra("errorString",(ArrayList)errorlist);
+                        //エラー回数/35=1セクションのエラー率
+                        finishintent.putExtra("errorCount",String.valueOf(errorcount/35.0));
+                        // ポインター軌跡、（３５回分）
+                        finishintent.putStringArrayListExtra("trajectory",(ArrayList)trajectorylist);
+                        // 初期指座標、（３５個分）
+                        finishintent.putStringArrayListExtra("firstTouchPoint",(ArrayList)firsttouchpointlist);
+                        // 初期指ヨー角、（３５個分）
+                        finishintent.putStringArrayListExtra("firstYo",(ArrayList)firstyo_list);
+                        // 初期指の長軸短軸（３５個分）。比率＝長軸長さ/短軸長さ。
+                        finishintent.putStringArrayListExtra("firstHiritu",(ArrayList)firsthiritulist);
+
+                        startActivity(finishintent);
                     }
                     buttonSet();
                 }
@@ -415,6 +442,7 @@ public class MainActivity extends AppCompatActivity{
                 //xmove_flg = false;
                 //ymove_flg = false;
                 animation_flg = false;
+                error ="-";
                 kyori_y = 0;
                 kyori_x = 0;
                 animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。→止まってない。改善する
@@ -426,77 +454,6 @@ public class MainActivity extends AppCompatActivity{
                 move_y = e.getY();
                 move_x = e.getX();
                 break;
-
-            default:///上の条件どれにも当てはまらかった時タッチアップと同じ
-                if (systemTrigger_flag) {//systemTrigger_flag=trueの時、離れたらその点にタッチ転送
-
-                    ////データ保存用：操作終了時間////
-                    task_endtime = System.nanoTime();//システム終了時間計測
-
-                    if (by <= pointer_finaly+50 && pointer_finaly+50 <= buttony && bx <= pointer_finalx +50 && pointer_finalx+50 <= buttonx){
-                        //if (pointer_finaly >= by && pointer_y <= buttony && pointer_x >= bx && pointer_x <= buttonx) {
-                        //データ保存用：成功回数カウント
-                        seikoukaisuu += 1;
-                        Log.d("seikou","システムタッチ成功");
-                        trans_touchevent();
-                    }
-                    //システムトリガー終了し、諸々の処理を動かさないように//
-                    systemTrigger_flag = false;
-
-                    ///でーた保存///
-                    double sousa_time = (double)(task_endtime - task_starttime) / (double)1000000000;
-
-                    if (rensyuflg) {
-                        ///習熟度計算////
-                        int rot = task_count + 1;
-                        for (int i = 0; i < 35; i++) {
-                            if (rot == i) {
-                                sousaarray[i] = sousa_time;
-                            }
-                        }
-                        if ((rot % 2) == 0) {
-                            syujyukudo[rot] = (sousaarray[rot] / sousaarray[rot / 2]) * 100;
-                            if (rot >= 2) {
-                                if (Math.floor(syujyukudo[rot]) <= Math.floor(syujyukudo[(rot - 2)]) + 3 && Math.floor(syujyukudo[rot]) >= Math.floor(syujyukudo[(rot - 2)]) - 3) {
-                                    Toast.makeText(this, "習熟度発散: ", Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        }
-                        //習熟度計算終わり//
-                    }else{
-
-                        task_kekka = "\r\n"+"タスク"+String.valueOf(task_count+1)+ "\r\n"+"ターゲット座標: "+String.valueOf(bx)+" , "+String.valueOf(by)+"\r\n"+"操作時間: "+ String.valueOf(sousa_time)+"\r\n"+"成功回数: "+String.valueOf(seikoukaisuu)+"\r\n"+"ポインター軌跡:"+pointer_kiseki.toString();
-
-                        saveFile();
-                        //画像データ保存もimageview配列使ってここにしたい（画像データ1万枚近くを操作中に保存するのは処理思い原因になりそう）//
-
-                        ////1タスク完了後データ等の処理//
-                        ///軌跡系変数を初期化or消す//
-                        pointer_kiseki = new StringBuilder();//インスタンス再生成してデータ消す
-                        imagecount = 1;
-                    }
-
-                    //1タスク終了//
-                    task_count += 1;
-                    if (task_count == 35){
-                        Toast.makeText(this, "セクション終了:お疲れさまでした", Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(getApplication(), SubActivity.class);
-                        startActivity(intent);
-                    }
-                    buttonSet();
-                }
-
-            ///フラグや変数諸々初期化
-                long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
-                pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
-                pointerimage.setVisibility(View.GONE);
-                systemTrigger_flag = false;
-                //xmove_flg = false;
-                //ymove_flg = false;
-                animation_flg = false;
-                kyori_y = 0;
-                kyori_x = 0;
-                animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。→止まってない。改善する
 
         }
         ///タッチ時条件分岐終了//
@@ -535,6 +492,39 @@ public class MainActivity extends AppCompatActivity{
 ////////////////ontouch{}--end/////////////////////////
 
 ///////////////////////////////////////////////関数//////////////////////////////////////
+    //習熟度計算関数//
+    public void syujyuku_do() {
+        int rot = task_count + 1;
+        for (int i = 0; i < 35; i++) {
+            if (rot == i) {
+                sousaarray[i] = (double)(task_endtime - task_starttime) / (double)1000000000;
+            }
+        }
+        if ((rot % 2) == 0) {
+            syujyukudo[rot] = (sousaarray[rot] / sousaarray[rot / 2]) * 100;
+            if (rot >= 2) {
+                if (Math.floor(syujyukudo[rot]) <= Math.floor(syujyukudo[(rot - 2)]) + 3 && Math.floor(syujyukudo[rot]) >= Math.floor(syujyukudo[(rot - 2)]) - 3) {
+                    Toast.makeText(this, "習熟度発散: ", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+    //1タスク終了時のタスクデータ保存と１タスク毎に更新されるデータをリストに追加＋初期化
+    public void dataOfTask() {
+        taskcountlist.add(String.valueOf(task_count+1)); //taskcountlist[0~34]に[1~35]が入る
+        targetpointlist.add(String.valueOf(bx)+","+String.valueOf(by));
+        sousatimelist.add(String.valueOf((double)(task_endtime - task_starttime) / (double)1000000000));
+        errorlist.add(String.valueOf(error));
+        error = "-";
+        trajectorylist.add(pointer_kiseki);
+        imagecount = 1;
+        pointer_kiseki.clear();
+        firsttouchpointlist.add(String.valueOf(syoki_touch_x)+","+String.valueOf(syoki_touch_y));
+        firstyo_list.add(String.valueOf(syoki_yo));
+        firsthiritulist.add(syoki_hiritu);
+
+    }
+
     // ファイルを保存関数//
     public void saveFile() {
         //ファイル保存用//
@@ -560,14 +550,14 @@ public class MainActivity extends AppCompatActivity{
         }
     }
     // 画像ファイルを保存関数//
+    //現状、画像サイズが小さい。画像が粗い（解像度が悪すぎる）、DB使えないうえで効率的な保存＋管理方法模索中
     public void saveimageFile() {
         //ファイル保存用//
+        //画像ファイル名"1_1task01_0 ,150_001"　＝　被験者情報_タスク番号_ターゲット座標(x,y)_枚目
+        String image_fileName = statustext + "_" + String.valueOf(String.format("%02d",task_count+1)) + "_" + String.valueOf(bx)+","+String.valueOf(by) + "_" + String.valueOf(String.format("%03d",imagecount)) + ".png";
 
-        String image_fileName = "task" + String.valueOf(String.format("%02d",task_count+1)) + "_i_" + String.valueOf(String.format("%03d",imagecount)) + ".png";
-        // try-with-resources
         try {
-
-            if (imagecount == 1 || imagecount%3 == 0) {//imagecountが1か3の倍数の時だけ保存→画像データ量1/3に
+            if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
                 //画像保存
                 File extStrageDir = Environment.getExternalStorageDirectory();
                 File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + ftext, image_fileName);//練習
@@ -657,7 +647,7 @@ public class MainActivity extends AppCompatActivity{
                         try {
                             box = Imgproc.fitEllipse(matOfInterest);//楕円検出、フィッティング
                             size_height = (float) box.size.height;
-
+                            hiritu = String.valueOf(box.size.height) + "/" + String.valueOf(box.size.width);
                             size = (float)((box.size.height/2) * (box.size.width) * Math.PI);//楕円の面積で推定
                             //Log.d("パラメータ、サイズ", String.valueOf(size));
                             //Log.d("パラメータ", String.valueOf(size_first) + " , " +String.valueOf(size));
@@ -666,6 +656,7 @@ public class MainActivity extends AppCompatActivity{
                             touchcenty = (float)box.center.y;
                             //Log.d("x,y", String.valueOf(touchcentx) +" , "+String.valueOf(touchcenty));
                             yo = 180 - box.angle;//yoに真上を0として左90の角度しまう
+
 /**
                             /////カーソル位置調整//////
                             y_kettei();//返り値:y_after

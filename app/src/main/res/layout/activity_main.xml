@@ -53,22 +53,6 @@
             app:layout_constraintTop_toTopOf="@+id/button"
             app:srcCompat="@drawable/waku" />
 
-        <Button
-            android:id="@+id/buttonon"
-            android:layout_width="122dp"
-            android:layout_height="57dp"
-            android:text="@string/on"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <Button
-            android:id="@+id/buttonoff"
-            android:layout_width="131dp"
-            android:layout_height="54dp"
-            android:text="@string/off"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
         <TextView
             android:id="@+id/textView2"
             android:layout_width="wrap_content"

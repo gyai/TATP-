@@ -3,6 +3,7 @@ package com.example.TATP_practice;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -37,12 +38,17 @@ public class SubActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sub);
+
+        Intent intent = this.getIntent();
+        // = intent.getStringExtra("");
+        // = intent.getBooleanExtra("",);
+
         MainActivity mainActivity = new MainActivity();
         String tsk_filename = mainActivity.ftext;
         Boolean rensyuuflg = mainActivity.rensyuflg;
 
-///35タスクが終了し画面が遷移したら、データを保存したフォルダを圧縮し、データを削除//
-        if (rensyuuflg) {
+///35タスクが終了し画面が遷移したら、画像フォルダを圧縮し、データを削除//
+
             // ZIP化実施フォルダを取得
             //File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + tsk_filename);
 
@@ -78,52 +84,14 @@ public class SubActivity extends AppCompatActivity {
                 //エラー処理（Zipファイルをを削除するなど）
             }
 
-            /**
-            ArrayList<File> files
-                    = new ArrayList<File>() {
-                {
-                    add(downloadDir);
-                }
-            };
 
-            String zipFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + tsk_filename;
-            try {
-                ZipFile zipFile = new ZipFile(zipFilePath);
-
-                /** パラメータ
-                ZipParameters params = new ZipParameters();
-                params.setCompressionMethod(CompressionMethod.DEFLATE);
-                params.setCompressionLevel(CompressionLevel.FAST);//圧縮レベルは高速
-
-                /** ファイルの圧縮
-                for (File file : files) {
-                    if (file.isFile())
-                        zipFile.addFile(file, params);
-                    else
-                        zipFile.addFolder(file, params);
-                }
-            }catch (IOException e) {
-                //System.out.println("Most probably wrong password.");
-                e.printStackTrace();
-            }
-            //} catch(ZipException e) {
-                //e.printStackTrace();
-            //}
-        */
-        }
         Button bkbutton = findViewById(R.id.b);
-        bkbutton.setOnClickListener(v ->
-                finish());
+        bkbutton.setOnClickListener(v -> {
+            Intent restartintent = new Intent(getApplication(), StartActivity.class);
+            startActivity(restartintent);
+                }
+        );
     }
-    /**
-     * ファイルとフォルダを圧縮する
-     * @param 圧縮するFile
-     * @param zipName 生成されるzipファイルのパス
-     *
-    public void compressFiles(
-            List<File> files, String zipFilePath)
-    {
 
-    }*/
 
 }

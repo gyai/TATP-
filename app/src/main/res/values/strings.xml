@@ -14,6 +14,8 @@
     <string name="hoseitext">指の向き補正OFF</string>
     <string name="start">Button</string>
     <string name="edit">hint</string>
+    <string name="restart">restart</string>
+    <string name="restarttext">セクション終了</string>
 
 
 </resources>
