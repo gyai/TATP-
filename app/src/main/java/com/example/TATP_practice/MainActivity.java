@@ -37,6 +37,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -59,16 +60,11 @@ public class MainActivity extends AppCompatActivity{
     public static int[] flattermatrix = null;//1次元配列静電容量値
     public static double yo = 0;//OpenCVで求めたヨー角格納用。ピッチトリガーで使う
 
-
-    public static double final_yo = 0;//最終的なヨー角代入用
-    public static double final_pitch = 500;//最終的なピッチ代入用
     public static float size = 0;//楕円サイズ
 
     /////フラグ/////
     public static Boolean systemTrigger_flag = false;//押されている間かどうか=転送システムが起動しているか
     public LocalDeviceHandler localDeviceHandler = new LocalDeviceHandler();
-    //public static Boolean ymove_flg = false;//指の傾きが最大のとき&&0.5秒固定していたら、それより奥に0.5秒間隔で20ピクセルずつ動く判定フラグ
-    //public static Boolean xmove_flg = false;//指の傾きが最大のとき&&0.5秒固定していたら、それより奥に0.5秒間隔で20ピクセルずつ動く判定フラグ
     public Boolean animation_flg = false;
     public Boolean errorflg = false;//楕円が認識されなかった時用
 
@@ -79,16 +75,12 @@ public class MainActivity extends AppCompatActivity{
     //touch転送用変数
     public float syoki_touch_x, syoki_touch_y;
     public float touchcentx, touchcenty;
-    public float size_first;
-    public float touchcentx_first, touchcenty_first;
     public float move_x, move_y;
     public float kyori_x,kyori_y;
     public float pointer_x, pointer_y;//渡すx,y座標
-    public float keisan_x, keisan_y;//ヨー角調整時使用
     public float syoki_pointerx;//初期位置
     public float syoki_pointery;
     public float syoki_finalx,syoki_finaly;
-    public float syoki_keisanx, syoki_keisany;
     public float syoki_yo;
     public String syoki_hiritu;
     public String hiritu;
@@ -96,7 +88,7 @@ public class MainActivity extends AppCompatActivity{
     public float sa_y;
     public float sa_x;
     public float size_height;
-    public float size_height_first;
+
 
     static final int SAIBYOUGA_KANKAKU_MS = 50; //pointerの再描画の間隔（ms）。小さいほどアニメーションが滑らかに。
 
@@ -119,7 +111,6 @@ public class MainActivity extends AppCompatActivity{
     public ArrayList<Integer> arrayindex = new ArrayList<Integer>();
 
     //データ保存用//
-
     public int task_count = 0;
     public long task_starttime;
     public long task_endtime;
@@ -138,6 +129,9 @@ public class MainActivity extends AppCompatActivity{
     public  List<String> firsttouchpointlist = new ArrayList<>();
     public  List<String> firstyo_list = new ArrayList<>();
     public  List<String> firsthiritulist = new ArrayList<>();
+    public List<String> imagenamearray = new ArrayList<>();
+    public List<byte[]> sectionimagearray = new ArrayList<>();
+
 ////////////onCreate()-start/////////////////////
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -428,7 +422,10 @@ public class MainActivity extends AppCompatActivity{
                         finishintent.putStringArrayListExtra("firstYo",(ArrayList)firstyo_list);
                         // 初期指の長軸短軸（３５個分）。比率＝長軸長さ/短軸長さ。
                         finishintent.putStringArrayListExtra("firstHiritu",(ArrayList)firsthiritulist);
-
+                        // 画像名前（全画像分）
+                        finishintent.putStringArrayListExtra("imageName",(ArrayList)imagenamearray);
+                        // 画像byte配列（全画像分）//データ型がintent不可だったので、アクティビティ呼び出しで受け渡す
+                        //finishintent.putStringArrayListExtra("imageByte",(ArrayList)sectionimagearray);
                         startActivity(finishintent);
                     }
                     buttonSet();
@@ -554,24 +551,41 @@ public class MainActivity extends AppCompatActivity{
     public void saveimageFile() {
         //ファイル保存用//
         //画像ファイル名"1_1task01_0 ,150_001"　＝　被験者情報_タスク番号_ターゲット座標(x,y)_枚目
-        String image_fileName = statustext + "_" + String.valueOf(String.format("%02d",task_count+1)) + "_" + String.valueOf(bx)+","+String.valueOf(by) + "_" + String.valueOf(String.format("%03d",imagecount)) + ".png";
+        String image_fileName = statustext + "_" + String.valueOf(String.format("%02d",task_count+1)) + "_" + String.valueOf(bx)+","+String.valueOf(by) + "_" + String.valueOf(String.format("%03d",imagecount)) + ".jpeg";
 
-        try {
+       //try {
             if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
                 //画像保存
+                /**
                 File extStrageDir = Environment.getExternalStorageDirectory();
-                File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + ftext, image_fileName);//練習
+                File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + ftext, image_fileName);
 
                 FileOutputStream outStream = new FileOutputStream(i_file);
-                bmpimage.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+                bmpimage.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
                 outStream.close();
+                 */
+                imagenamearray.add(image_fileName);//画像保存する際にファイル名も保存
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                bmpimage.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                byte[] jpgarr = baos.toByteArray();
+                sectionimagearray.add(jpgarr);//imagenamearrayリストに対応した要素番号に、jpeg画像のbyte配列データ格納
             }
-        }
-        catch (IOException ioExceptione) {
-            ioExceptione.printStackTrace();
-        }
+        //}
+        //catch (IOException ioExceptione) {
+        //    ioExceptione.printStackTrace();
+        //}
     }
 
+    /**
+     * システム起動時の長短比率で検定やって、偶然なのかそのせいなのか判断できない。棄却されなくてもよい。
+     * 比率検定でp値を見る→p値がいくつになるかを見る
+     * 全体のエラー率を持ち上げているのかたまたまなのか。
+     * エラー要因は指の比率かどうか。
+     * ２つ今仮説があるよね。
+     * 側面の仮説（側面と腹とのエラー率を比較）右下エリアにおいて、側面字のタスク集団と腹集団の二つを比較するー＞有意な差があるかどうか。差がないのならば側面での起動が直接右下のエラー高い要因ではないといえる
+     * ラグの仮説（ラグが起きている集団と、起きてない集団のエラー率の差）棄却されたらエリアに限った話じゃないじゃん。シンプルに全体のエラー率を押し上げている。棄却されなかったら右下のエリアは「ラグ」をリカバリーできない要因があると分かる。
+     *
+     */
 
 ///タッチ点転送関数//
     public void trans_touchevent(){

@@ -1,6 +1,15 @@
 package com.example.TATP_practice;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.ColumnInfo;
+import androidx.room.Dao;
+import androidx.room.Database;
+import androidx.room.Delete;
+import androidx.room.Entity;
+import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
+import androidx.room.PrimaryKey;
+import androidx.room.Query;
 
 import android.content.Context;
 import android.content.Intent;
@@ -8,20 +17,15 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-
-import net.lingala.zip4j.ZipFile;
-import net.lingala.zip4j.model.ZipParameters;
-import net.lingala.zip4j.model.enums.CompressionLevel;
-import net.lingala.zip4j.model.enums.CompressionMethod;
-import net.lingala.zip4j.util.InternalZipConstants;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,56 +37,65 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipOutputStream;
 
 public class SubActivity extends AppCompatActivity {
-    //public TextView textView = findViewById(R.id.textView);
+    public TextView textView = findViewById(R.id.textView);//DBとzip圧縮できたら完了コメント出す
+    public String statustext;
+    public List<String> taskcountlist = new ArrayList<>();
+    public List<String> targetpointlist = new ArrayList<>();
+    public List<String> sousatimelist = new ArrayList<>();
+    public List<String> errorlist = new ArrayList<>();
+    public String errorpercent;
+    public List<String> trajectorylist = new ArrayList<>();
+    public List<String> firsttouchpointlist = new ArrayList<>();
+    public List<String> firstyo_list = new ArrayList<>();
+    public List<String> firsthiritulist = new ArrayList<>();
+    public List<String> imagenamearray = new ArrayList<>();
+    public List<byte[]> imagearray = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sub);
 
         Intent intent = this.getIntent();
-        // = intent.getStringExtra("");
-        // = intent.getBooleanExtra("",);
+        //被験者情報、(1セクション＝全体通して更新されない)
+        statustext = intent.getStringExtra("statusText");
+        // タスク番号
+        taskcountlist = intent.getStringArrayListExtra("taskCount");
+        // ターゲット座標(x,y)
+        targetpointlist = intent.getStringArrayListExtra("targetPoint");
+        // 操作時間
+        sousatimelist = intent.getStringArrayListExtra("sousaTime");
+        // エラー
+        errorlist = intent.getStringArrayListExtra("errorString");
+        //エラー回数/35=1セクションのエラー率
+        errorpercent = intent.getStringExtra("errorCount");
+        // ポインター軌跡
+        trajectorylist = intent.getStringArrayListExtra("trajectory");
+        // 初期指座標
+        firsttouchpointlist = intent.getStringArrayListExtra("firstTouchPoint");
+        // 初期指ヨー角
+        firstyo_list = intent.getStringArrayListExtra("firstYo");
+        // 初期指の長軸短軸（３５個分）。比率＝長軸長さ/短軸長さ。
+        firsthiritulist = intent.getStringArrayListExtra("firstHiritu");
+        // 画像名前（全画像分）
+        imagenamearray = intent.getStringArrayListExtra("imageName");
 
+        // 画像byte配列（全画像分）
         MainActivity mainActivity = new MainActivity();
-        String tsk_filename = mainActivity.ftext;
-        Boolean rensyuuflg = mainActivity.rensyuflg;
+        imagearray = mainActivity.sectionimagearray;
 
-///35タスクが終了し画面が遷移したら、画像フォルダを圧縮し、データを削除//
-
-            // ZIP化実施フォルダを取得
-            //File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + tsk_filename);
-
-            //final File downloadDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + tsk_filename);
-
-            String in = /*Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS+"/" +*/"/sdcard/Download/"+ tsk_filename;
-            String out = /*Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS+"/" + */"/sdcard/Download/"+tsk_filename+".zip";
-
-//圧縮する対象のファイル
-            File[] files = new File(in).listFiles();
-
-            ZipParameters params = new ZipParameters();
-//圧縮アルゴリズムはDEFLATE
-            params.setCompressionMethod(CompressionMethod.DEFLATE);
-//圧縮レベルは高速
-            params.setCompressionLevel(CompressionLevel.FAST);
-
-//ファイルが存在しなければ新規、存在すれば追加となる
-            ZipFile zip = new ZipFile(out);
-            try {
-                for (File f : files) {
-                    System.out.println(f.getPath());
-
-                    if (f.isDirectory()) {
-                        //addFolder は配下の階層ごと追加する
-                        zip.addFolder(f, params);
-                    } else {
-                        //addFile はファイル単体を追加する
-                        zip.addFile(f, params);
-                    }
-                }
-            } catch (IOException e) {
-                //エラー処理（Zipファイルをを削除するなど）
+        //DB操作
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Database db = Database.getInstance(context);
+                long maxId = db.UserDao().getMaxId();
+                callback.onComplete(maxId);
             }
+        }).start();
+
+        ///35タスクが終了し画面が遷移したら、画像フォルダを圧縮し、データを削除//
+        compress(imagearray, statustext);
 
 
         Button bkbutton = findViewById(R.id.b);
@@ -93,5 +106,99 @@ public class SubActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * @param List   inputFiles : 圧縮したいJPEGファイルのリストー＞byte配列で行けるのか微妙？？
+     * @param String outputFile : 出力先となるZIPファイルのファイル名
+     */
+    public void compress(List inputFiles, String outputFile) {
+        // 入力ストリーム
+        InputStream is = null;
 
+        // ZIP形式の出力ストリーム
+        ZipOutputStream zos = null;
+
+        // 入出力用のバッファを作成
+        byte[] buf = new byte[1024];
+
+        // ZipOutputStreamオブジェクトの作成
+        try {
+            zos = new ZipOutputStream(new FileOutputStream(outputFile));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            for (int i = 0; i < inputFiles.size(); i++) {
+                // 入力ストリームのオブジェクトを作成
+                is = new FileInputStream((String) inputFiles.get(i));
+
+                // Setting Filename
+                String filename = imagenamearray.get(i);
+                // String filename = String.format("img_%02d.jpg", i);
+
+                // ZIPエントリを作成
+                ZipEntry ze = new ZipEntry(filename);
+
+                // 作成したZIPエントリを登録
+                zos.putNextEntry(ze);
+
+                // 入力ストリームからZIP形式の出力ストリームへ書き出す
+                int len = 0;
+                while ((len = is.read(buf)) != -1) {
+                    zos.write(buf, 0, len);
+                }
+
+                // 入力ストリームを閉じる
+                is.close();
+
+                // エントリをクローズする
+                zos.closeEntry();
+            }
+
+            // 出力ストリームを閉じる
+            zos.close();
+            textView.setText("圧縮＆保存完了");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //DB(Room)用
+    @Entity
+    public class entry {
+        @PrimaryKey
+        public int uid;
+
+        @ColumnInfo(name = "first_name")
+        public String firstName;
+
+        @ColumnInfo(name = "last_name")
+        public String lastName;
+    }
+
+    @androidx.room.Dao
+    public interface Dao {
+        //@Query("SELECT * FROM user")
+        //List<User> getAll();
+
+        //@Query("SELECT * FROM user WHERE uid IN (:userIds)")
+        //List<User> loadAllByIds(int[] userIds);
+
+        //@Query("SELECT * FROM user WHERE first_name LIKE :first AND " +
+        //        "last_name LIKE :last LIMIT 1")
+        //User findByName(String first, String last);
+
+        @Insert
+        void insertAll(entry... users);
+
+        //@Delete
+        //void delete(User user);
+    }
+
+}
+@androidx.room.Database(entities = {SubActivity.entry.class}, version = 1)
+public abstract class Database extends RoomDatabase {
+    public abstract SubActivity.Dao Dao();
 }
