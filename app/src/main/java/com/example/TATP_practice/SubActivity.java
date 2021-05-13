@@ -1,15 +1,6 @@
 package com.example.TATP_practice;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.room.ColumnInfo;
-import androidx.room.Dao;
-import androidx.room.Database;
-import androidx.room.Delete;
-import androidx.room.Entity;
-import androidx.room.Insert;
-import androidx.room.OnConflictStrategy;
-import androidx.room.PrimaryKey;
-import androidx.room.Query;
 
 import android.content.Context;
 import android.content.Intent;
@@ -85,14 +76,7 @@ public class SubActivity extends AppCompatActivity {
         imagearray = mainActivity.sectionimagearray;
 
         //DB操作
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Database db = Database.getInstance(context);
-                long maxId = db.UserDao().getMaxId();
-                callback.onComplete(maxId);
-            }
-        }).start();
+
 
         ///35タスクが終了し画面が遷移したら、画像フォルダを圧縮し、データを削除//
         compress(imagearray, statustext);
@@ -166,39 +150,7 @@ public class SubActivity extends AppCompatActivity {
     }
 
     //DB(Room)用
-    @Entity
-    public class entry {
-        @PrimaryKey
-        public int uid;
 
-        @ColumnInfo(name = "first_name")
-        public String firstName;
-
-        @ColumnInfo(name = "last_name")
-        public String lastName;
-    }
-
-    @androidx.room.Dao
-    public interface Dao {
-        //@Query("SELECT * FROM user")
-        //List<User> getAll();
-
-        //@Query("SELECT * FROM user WHERE uid IN (:userIds)")
-        //List<User> loadAllByIds(int[] userIds);
-
-        //@Query("SELECT * FROM user WHERE first_name LIKE :first AND " +
-        //        "last_name LIKE :last LIMIT 1")
-        //User findByName(String first, String last);
-
-        @Insert
-        void insertAll(entry... users);
-
-        //@Delete
-        //void delete(User user);
-    }
 
 }
-@androidx.room.Database(entities = {SubActivity.entry.class}, version = 1)
-public abstract class Database extends RoomDatabase {
-    public abstract SubActivity.Dao Dao();
-}
+

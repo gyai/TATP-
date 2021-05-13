@@ -14,7 +14,6 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,9 +41,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
+
+
 
 public class MainActivity extends AppCompatActivity{
     static {
@@ -217,7 +220,7 @@ public class MainActivity extends AppCompatActivity{
     public double[] syujyukudo = new double[35];
 
     @Override
-    public boolean onTouchEvent (MotionEvent e){//何らかのタッチ操作中ずっと動いている？？
+    public boolean onTouchEvent (MotionEvent e){//何らかのタッチ操作中ずっと動いている
         AnimationThread animationThread = new AnimationThread();
 
         ///pointer描画を50ミリ秒間隔でアニメーションさせる///////////////
@@ -303,7 +306,7 @@ public class MainActivity extends AppCompatActivity{
                 ///タッチダウン後0.5秒後、サイズ30以上なら起動→サイズの微調整は必要かも
                 if (size >= 30 && systemTrigger_flag == false) {//タッチした時の輪郭サイズが30以上=指の腹で押されたならシステム開始
 
-                    ///初期タッチ時系変数///
+                    ///初期タッチ時系変数：初期化///
                     syoki_touch_x = e.getX();//初期位置計算でのみ使うタッチX座標
                     syoki_touch_y = e.getY();//初期位置計算でのみ使うタッチY座標
 
@@ -312,8 +315,8 @@ public class MainActivity extends AppCompatActivity{
                     kyori_y = 0;
                     kyori_x = 0;
 
-                    //size_first = size;//初期タッチ時のサイズ
-                    //size_height_first = size_height;//初期タッチ時のサイズ高さ
+                    //size_first = size; //初期タッチ時のサイズ
+                    //size_height_first = size_height; //初期タッチ時のサイズ高さ
 
                     ///データ保存用、システム起動時に1タスクの操作時間計測用に時間計測///
                     task_starttime = System.nanoTime();//システム起動時のシステム時間
@@ -576,16 +579,7 @@ public class MainActivity extends AppCompatActivity{
         //}
     }
 
-    /**
-     * システム起動時の長短比率で検定やって、偶然なのかそのせいなのか判断できない。棄却されなくてもよい。
-     * 比率検定でp値を見る→p値がいくつになるかを見る
-     * 全体のエラー率を持ち上げているのかたまたまなのか。
-     * エラー要因は指の比率かどうか。
-     * ２つ今仮説があるよね。
-     * 側面の仮説（側面と腹とのエラー率を比較）右下エリアにおいて、側面字のタスク集団と腹集団の二つを比較するー＞有意な差があるかどうか。差がないのならば側面での起動が直接右下のエラー高い要因ではないといえる
-     * ラグの仮説（ラグが起きている集団と、起きてない集団のエラー率の差）棄却されたらエリアに限った話じゃないじゃん。シンプルに全体のエラー率を押し上げている。棄却されなかったら右下のエリアは「ラグ」をリカバリーできない要因があると分かる。
-     *
-     */
+
 
 ///タッチ点転送関数//
     public void trans_touchevent(){
@@ -768,13 +762,75 @@ public class MainActivity extends AppCompatActivity{
 
 ///完全別処理を行うアニメーションフラグ管理用Thread/////
     ////並行処理してくれる。主にフラグを管理する目的////
-    ///タッチダウンされたらスレッド開始して、タッチが終わったらやめる→スレッド止めることできてないっぽいから改善必要//
+
+    /**
+     * アニメーションと通常制御の切り替えラグの改善
+     * 通常制御時、0.5秒間座標の差が±5以内ならフラグ=true、0.5秒の間(0.05秒＊１０)で範囲外にいったらフラグ=falseにしてループ強制で抜ける
+     *
+     * 案１：メインのUIスレッド以外で、0.1秒ごとに指の座標を1タスク分全部取得し続ける。（リスト？）
+     * じゃあ0.5秒指が動いていないって？－＞要素の１～５要素前全部が今の要素の指座標と比較して±５以内。
+     *
+     * 案２：スレッドスリープ0.5秒を、0.05秒ｘ１０に分解し、分解したスリープ処理ごとに動いたかどうか判定。(0.5秒を１まとまりとする)
+     * 0.5秒の間に動いたなら（これどうやって判定する？）アニメーション移行しない。
+     * 0.5秒の間が全部範囲内だったら、アニメーション移行。
+     */
     class AnimationThread extends Thread{
         @Override public void run() {
-            //Log.d("THreadフラグ" , String.valueOf(systemTrigger_flag));
-            if (systemTrigger_flag) {
-                while (systemTrigger_flag) {
 
+            //queue構造の配列を作る
+            Queue<Point2DFloat> pointerlog = new ArrayDeque<>();
+            int queuemax = 100;
+            float inf = 99999.9f;
+            for (int i=0; i < queuemax; i++){
+                pointerlog.add(new Point2DFloat(inf, inf));
+            }
+
+            while (systemTrigger_flag){
+                pointerlog.add(new Point2DFloat(move_x, move_y));
+                float max_x=-inf,max_y=-inf,min_x=inf,min_y=inf;
+                for (Point2DFloat p: pointerlog){
+                    max_x=Math.max(max_x,p.x);
+                    max_y=Math.max(max_y,p.y);
+                    min_x=Math.min(min_x,p.x);
+                    min_y=Math.min(min_y,p.y);
+                }
+
+                float x_sa = Math.abs(max_x-min_x);
+                float y_sa = Math.abs(max_y-min_y);
+                if ((x_sa <= 5 && y_sa <= 5) && (pointer_x < syoki_pointerx-50||syoki_pointerx+50 < pointer_x || pointer_y < syoki_pointery-50||syoki_pointery+50 < pointer_y)){
+                    animation_flg = false;
+                }else{
+                    animation_flg = true;
+                }
+
+                pointerlog.poll(); //先頭取り出し
+            }
+
+/**
+                while (true) {
+                    //whileの中でqueueの中にｘとｙをひたすら入れる、例えば１００しか入らないようにしたら、１００超えたら先に入れたデータが消えていく（プログラム的には消す）。最初にバグらないように、あらかじめ変な座標データを入れてお必要あり。
+                    //１００個データをそろえるまでにかかる時間が０．５秒であれば、０，５秒分のデータが常にたまっていることになる。
+                    //やりたいことは、キューに入れようとするデータと、１００個からあふれて押し出されたデータを比較して、範囲内であればアニメーションフラグがtrueになる。
+                    //仮に、１００個データを集める途中で範囲から外れたデータを入れようとしたなら、それは指を明示的に動かしたことになるので、フラグはfalseになる。
+
+                    float startx = move_x;
+                    float starty = move_y;
+                    Boolean aniflg = false;
+                    long startTime = System.nanoTime();
+                    for (int i=0; i < 10; i++){ //10回繰り返す
+                        Thread.sleep(50); //0.05秒止める
+                        float x_sa = startx - move_x;
+                        float y_sa = starty - move_y;
+                        if (((-5 <= x_sa && x_sa <= 5)&&(-5 <= y_sa && y_sa <= 5)) && (pointer_x < syoki_pointerx-50||syoki_pointerx+50 < pointer_x || pointer_y < syoki_pointery-50||syoki_pointery+50 < pointer_y)){
+                            aniflg = true;
+                        }else{
+                            aniflg = false;
+                            break;
+                        }
+                    }
+*/
+
+                    /**
                     try {
                         float startx = move_x;
                         float starty = move_y;
@@ -795,7 +851,7 @@ public class MainActivity extends AppCompatActivity{
                         
                         //アニメーションフラグ//
                         //0.5秒間指がほぼ動いていない、かつ、ポインターの位置が初期位置からプラマイ５０より外側の時
-                        if (((-5 <= x_sa && x_sa <= 5)&&(-5 <= y_sa && y_sa <= 5))&& /*(!(sa_x < 25 && -25 < sa_x) || !(sa_y < 15 && -25 < sa_y))*/ (pointer_x < syoki_pointerx-50||syoki_pointerx+50 < pointer_x || pointer_y < syoki_pointery-50||syoki_pointery+50 < pointer_y)) {
+                        if (((-5 <= x_sa && x_sa <= 5)&&(-5 <= y_sa && y_sa <= 5))&&  (pointer_x < syoki_pointerx-50||syoki_pointerx+50 < pointer_x || pointer_y < syoki_pointery-50||syoki_pointery+50 < pointer_y)) {
                             animation_flg = true;
 
                         }else{
@@ -807,9 +863,10 @@ public class MainActivity extends AppCompatActivity{
                         //このログを見たことは無い。機能していない//
                         return;
                     }
+                    */
 
-                }
-            }
+               // }
+
         }
     }
 
