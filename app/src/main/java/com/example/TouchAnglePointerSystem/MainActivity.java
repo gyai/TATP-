@@ -79,7 +79,6 @@ public class MainActivity extends AppCompatActivity{
     public float syoki_touch_x, syoki_touch_y;
     public float touchcentx, touchcenty;
     public float move_x, move_y;
-    public float kyori_x,kyori_y;
     public float pointer_x, pointer_y;//渡すx,y座標
     public float syoki_pointerx;//初期位置
     public float syoki_pointery;
@@ -180,7 +179,7 @@ public class MainActivity extends AppCompatActivity{
         pointerimage.setLayoutParams(imagelp);
         pointerimage.setVisibility(View.GONE);//なかったようにする,非表示
 
-        ConstraintLayout.LayoutParams wakulp = new ConstraintLayout.LayoutParams(110,110);
+        ConstraintLayout.LayoutParams wakulp = new ConstraintLayout.LayoutParams(200,200);
         waku = findViewById(R.id.wakuimage);
         waku.setImageResource(R.drawable.waku);
         waku.setLayoutParams(wakulp);
@@ -228,6 +227,7 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void run() {
                 if (systemTrigger_flag) {
+
                     ///ポインターが画面外に行かないように最終的な見た目の閾値設定///
                     if (pointer_x <= 50) {
                         pointer_x = 50;
@@ -256,8 +256,8 @@ public class MainActivity extends AppCompatActivity{
                     pointer_finalx = pointer_x - 50;//受け取った転送先座標からポインター画像の幅/2を引いて、座標を画像の真ん中に。
                     pointer_finaly = pointer_y - 50;
 
-                    syoki_finalx = syoki_pointerx - 55;
-                    syoki_finaly = syoki_pointery - 55;
+                    syoki_finalx = syoki_pointerx - 150;
+                    syoki_finaly = syoki_pointery - 150;
 
                     if (!rensyuflg) {
                         //静電容量画像保存
@@ -276,8 +276,9 @@ public class MainActivity extends AppCompatActivity{
 
                     //Log.d("pointer", String.valueOf(pointer_finalx) + " , " + String.valueOf(pointer_finaly));
                     //Log.d("syokipointer",String.valueOf(syoki_pointerx) +" , "+ String.valueOf(syoki_pointery));
-
+                    PointerSet();
                     pointerhandler.postDelayed(this, SAIBYOUGA_KANKAKU_MS);//0.05秒間隔でハンドラ開始してアニメーションしてる
+
 
                 }else{//指が離れている時
                     pointerimage.setVisibility(View.GONE);//指が離れたらポインタ隠す
@@ -297,14 +298,6 @@ public class MainActivity extends AppCompatActivity{
                 syoki_touch_x = e.getX();//初期位置計算で使う初期タッチX座標
                 syoki_touch_y = e.getY();//初期位置計算で使う初期タッチY座標
 
-                move_x = 0;
-                move_y = 0;
-                kyori_y = 0;
-                kyori_x = 0;
-
-                //size_first = size; //初期タッチ時のサイズ
-                //size_height_first = size_height; //初期タッチ時のサイズ高さ
-
                 ///データ保存用、システム起動時に1タスクの操作時間計測用に時間計測///
                 task_starttime = System.nanoTime();//システム起動時のシステム時間
 
@@ -322,9 +315,8 @@ public class MainActivity extends AppCompatActivity{
 
                 systemTrigger_flag = true;//システムトリガーフラグをtrueにするのはここだけ→システム起動はここだけ
                 //ポインター移動ハンドラ起動
-                pointerhandler.post(runnable);//ポインター描画ハンドラon
                 animationThread.start();//アニメーションスレッドをon
-
+                pointerhandler.post(runnable);//ポインター描画ハンドラon
             }
         };
 
@@ -425,13 +417,12 @@ public class MainActivity extends AppCompatActivity{
                 pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
                 pointerimage.setVisibility(View.GONE);
                 systemTrigger_flag = false;
-                //xmove_flg = false;
-                //ymove_flg = false;
+                move_x = 0;
+                move_y = 0;
                 animation_flg = false;
                 error ="-";
-                kyori_y = 0;
-                kyori_x = 0;
-                animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。→止まってない。改善する
+
+                //animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。→止まってない。改善する
 
 
                 break;
@@ -465,7 +456,7 @@ public class MainActivity extends AppCompatActivity{
                     animation_flg = false;
                     long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
                     pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
-                    animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。
+                    //animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。
 
                 }
                 Log.d("tag","buttonTouch");
@@ -651,11 +642,6 @@ public class MainActivity extends AppCompatActivity{
                             //Log.d("x,y", String.valueOf(touchcentx) +" , "+String.valueOf(touchcenty));
                             yo = 180 - box.angle;//yoに真上を0として左90の角度しまう
 
-/**
-                            /////カーソル位置調整//////
-                            y_kettei();//返り値:y_after
-                            x_kettei();//返り値:pointer_x
-*/
                         } catch (Exception e) {//楕円取得できないときはExceptionできてる
                             //Toast.makeText(getApplicationContext(), "指が認識できません:画面端を触りすぎです",Toast.LENGTH_SHORT).show();
                             //systemTrigger_flag = false;
@@ -688,14 +674,13 @@ public class MainActivity extends AppCompatActivity{
             //ここでは単純な、アニメーション時のpointer_x,yの決定（制御処理）を実装
             //ポインター座標　＋＝　2点間の距離distance+20の三角関数でｘとｙに変換したもの
             // (座標上で言うマイナス方向も動くのか？？？？？→ラジアンがしっかり機能していれば.sinや.cosでマイナスの値になっているはず)
-            pointer_y += (float) (Math.sin(radian) * distance*+20);
-            pointer_x += (float) (Math.cos(radian) * distance*+20);
-
-        }else{//通常時
-            pointer_y = (float) (Math.sin(radian) * distance*3);
-            pointer_x = (float) (Math.cos(radian) * distance*3);
+            syoki_pointery += (float) (Math.sin(radian) * 30);
+            syoki_pointerx += (float) (Math.cos(radian) * 30);
 
         }
+        pointer_y = syoki_pointery + (float) (Math.sin(radian) * distance*3);
+        pointer_x = syoki_pointerx + (float) (Math.cos(radian) * distance*3);
+        Log.d("pointer", String.valueOf(distance)+"_"+String.valueOf(pointer_x) +"," + String.valueOf(pointer_y));
     }
 
     //bitmapに格納するpix配列にRGBデータ代入
@@ -731,6 +716,7 @@ public class MainActivity extends AppCompatActivity{
      * 0.5秒の間に動いたなら（これどうやって判定する？）アニメーション移行しない。
      * 0.5秒の間が全部範囲内だったら、アニメーション移行。
      */
+
     class AnimationThread extends Thread{
         @Override public void run() {
 
@@ -743,88 +729,36 @@ public class MainActivity extends AppCompatActivity{
             }
 
             while (systemTrigger_flag){
-                pointerlog.add(new Point2DFloat(move_x, move_y));
-                float max_x=-inf,max_y=-inf,min_x=inf,min_y=inf;
-                for (Point2DFloat p: pointerlog){
-                    max_x=Math.max(max_x,p.x);
-                    max_y=Math.max(max_y,p.y);
-                    min_x=Math.min(min_x,p.x);
-                    min_y=Math.min(min_y,p.y);
-                }
+                try {
 
-                float x_sa = Math.abs(max_x-min_x);
-                float y_sa = Math.abs(max_y-min_y);
-                //ここで右側の初期座標と現在の座標との距離条件(アニメーション範囲にいるかどうか)を判定
-                //指がプラマイ5いないの範囲で停止しており、初期座標とムーブ座標との距離が50以上=初期タッチ座標を原点とする半径50の円より外側ならアニメーション領域
-                if ((x_sa <= 5 && y_sa <= 5) && distance > 50){
-                    animation_flg = false;
-                }else{
-                    animation_flg = true;
-                }
+                    pointerlog.add(new Point2DFloat(move_x, move_y));
+                    float max_x = -inf, max_y = -inf, min_x = inf, min_y = inf;
+                    for (Point2DFloat p : pointerlog) {
+                        max_x = Math.max(max_x, p.x);
+                        max_y = Math.max(max_y, p.y);
+                        min_x = Math.min(min_x, p.x);
+                        min_y = Math.min(min_y, p.y);
+                    }
 
-                pointerlog.poll(); //先頭取り出し
+                    float x_sa = Math.abs(max_x - min_x);
+                    float y_sa = Math.abs(max_y - min_y);
+                    //ここで右側の初期座標と現在の座標との距離条件(アニメーション範囲にいるかどうか)を判定
+                    //指がプラマイ5いないの範囲で停止しており、初期座標とムーブ座標との距離が50以上=初期タッチ座標を原点とする半径50の円より外側ならアニメーション領域
+                    if ((x_sa <= 5 && y_sa <= 5) && distance > 50) {
+                        animation_flg = true;
+                        Log.d("false","hoge");
+                    } else {
+                        animation_flg = false;
+                        Log.d("true","huga");
+
+                    }
+
+                    pointerlog.poll(); //先頭取り出し
+                    Thread.sleep(5);
+                }catch (InterruptedException inException){
+
+                }
             }
-
-/**
-                while (true) {
-                    //whileの中でqueueの中にｘとｙをひたすら入れる、例えば１００しか入らないようにしたら、１００超えたら先に入れたデータが消えていく（プログラム的には消す）。最初にバグらないように、あらかじめ変な座標データを入れてお必要あり。
-                    //１００個データをそろえるまでにかかる時間が０．５秒であれば、０，５秒分のデータが常にたまっていることになる。
-                    //やりたいことは、キューに入れようとするデータと、１００個からあふれて押し出されたデータを比較して、範囲内であればアニメーションフラグがtrueになる。
-                    //仮に、１００個データを集める途中で範囲から外れたデータを入れようとしたなら、それは指を明示的に動かしたことになるので、フラグはfalseになる。
-
-                    float startx = move_x;
-                    float starty = move_y;
-                    Boolean aniflg = false;
-                    long startTime = System.nanoTime();
-                    for (int i=0; i < 10; i++){ //10回繰り返す
-                        Thread.sleep(50); //0.05秒止める
-                        float x_sa = startx - move_x;
-                        float y_sa = starty - move_y;
-                        if (((-5 <= x_sa && x_sa <= 5)&&(-5 <= y_sa && y_sa <= 5)) && (pointer_x < syoki_pointerx-50||syoki_pointerx+50 < pointer_x || pointer_y < syoki_pointery-50||syoki_pointery+50 < pointer_y)){
-                            aniflg = true;
-                        }else{
-                            aniflg = false;
-                            break;
-                        }
-                    }
-*/
-
-                    /**
-                    try {
-                        float startx = move_x;
-                        float starty = move_y;
-
-                        Thread.sleep(500);//指の傾きが固定されているか判定、0.5秒待つ
-
-                        float endx = move_x;
-                        float endy = move_y;
-
-                        //xもっと動かすアニメーション//
-                        //0.5秒後のタッチしている指の座標が変わっていなかったら指がほぼ動いていなかったら//
-
-                        float x_sa = startx - endx;
-
-                        //yもっと動かすアニメーション//
-                        //0.5秒後のタッチしている指の座標が変わっていなかったら指がほぼ動いていなかったら//
-                        float y_sa = starty - endy;
-                        
-                        //アニメーションフラグ//
-                        //0.5秒間指がほぼ動いていない、かつ、ポインターの位置が初期位置からプラマイ５０より外側の時
-                        if (((-5 <= x_sa && x_sa <= 5)&&(-5 <= y_sa && y_sa <= 5))&&  (pointer_x < syoki_pointerx-50||syoki_pointerx+50 < pointer_x || pointer_y < syoki_pointery-50||syoki_pointery+50 < pointer_y)) {
-                            animation_flg = true;
-
-                        }else{
-                            animation_flg = false;
-
-                        }
-                    } catch (InterruptedException interruptedException) {
-                        Log.d("Thread", "スレッドを停止");
-                        //このログを見たことは無い。機能していない//
-                        return;
-                    }
-                    */
-
-               // }
 
         }
     }
