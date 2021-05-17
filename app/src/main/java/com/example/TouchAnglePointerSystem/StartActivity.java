@@ -1,12 +1,12 @@
-package com.example.TATP_practice;
+package com.example.TouchAnglePointerSystem;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 public class StartActivity extends AppCompatActivity {
 
@@ -15,15 +15,17 @@ public class StartActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
+        TextView text3 = findViewById(R.id.textView3);
+        text3.setText("練習or実験本番");
         Button prabtn = findViewById(R.id.practice);
         prabtn.setOnClickListener(v -> {
             practiceflg = true;
-
+            text3.setText("練習");
         });
         Button probtn = findViewById(R.id.production);
         probtn.setOnClickListener(v -> {
             practiceflg = false;
-
+            text3.setText("実験本番");
         });
         Button startbtn = findViewById(R.id.startbutton);
         startbtn.setOnClickListener(v -> {

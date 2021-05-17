@@ -1,4 +1,4 @@
-package com.example.TATP_practice;
+package com.example.TouchAnglePointerSystem;
 
 import android.content.Intent;
 import android.content.res.Resources;
@@ -88,8 +88,7 @@ public class MainActivity extends AppCompatActivity{
     public String syoki_hiritu;
     public String hiritu;
     public float pointer_finalx, pointer_finaly;//受け取った最終的なポインタ位置
-    public float sa_y;
-    public float sa_x;
+    public float distance;
     public float size_height;
 
 
@@ -128,7 +127,6 @@ public class MainActivity extends AppCompatActivity{
     public  List<String> sousatimelist = new ArrayList<>();
     public  List<String> errorlist = new ArrayList<>();
     public  List<List<String>> trajectorylist = new ArrayList<>();
-    public  List<List<ImageView>> imagelist = new ArrayList<>();
     public  List<String> firsttouchpointlist = new ArrayList<>();
     public  List<String> firstyo_list = new ArrayList<>();
     public  List<String> firsthiritulist = new ArrayList<>();
@@ -202,7 +200,7 @@ public class MainActivity extends AppCompatActivity{
 
             int index = arrayindex.get(task_count);//タスク番目の要素を取り出して、indexにする
             bx = 150 * ((index % 7));//ボタンx座標→indexを列要素数の7で割ったあまり。(例:index=1なら 1%7=0..1つめり1列目。index =34 34%7=4..6つまり6列目_
-            by = 150 * ((int) Math.floor(index / 7));//ボタンy座標
+            by = 150 * ((int) Math.floor(index / 7.0));//ボタンy座標
             //Log.d("ボタン座標", String.valueOf(bx) + " , " + String.valueOf(by) + "インデックス: " + String.valueOf(index));
 
 
@@ -230,15 +228,7 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void run() {
                 if (systemTrigger_flag) {
-
-                    if (!animation_flg) {//アニメーションフラグじゃない時
-                        pointer_x = syoki_pointerx - kyori_x;
-                        pointer_y = syoki_pointery - kyori_y;
-                    }
-
                     ///ポインターが画面外に行かないように最終的な見た目の閾値設定///
-                    
-                    //ヨー角そのままの時//
                     if (pointer_x <= 50) {
                         pointer_x = 50;
                     } else if (pointer_x >= 1030) {
@@ -250,7 +240,7 @@ public class MainActivity extends AppCompatActivity{
                         pointer_y = 1350;
                     }
                     if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
-                        pointer_kiseki.add(String.valueOf(pointer_x) + "," + String.valueOf(pointer_y)); //ポインター軌跡取得
+                        pointer_kiseki.add(pointer_x + "," + pointer_y); //ポインター軌跡取得
                     }
                     if (syoki_pointerx <= 65) {
                         syoki_pointerx = 65;
@@ -299,46 +289,42 @@ public class MainActivity extends AppCompatActivity{
         ////タッチ時トリガー:0.5秒長押ししたらトリガー起動したいので長押しハンドラ挟む///
         long LONG_PRESS_TIME = 500;    // 長押し時間（ミリ秒）
         Handler long_press_handler = new Handler();
-        Runnable long_press_receiver = new Runnable() {
-            @Override
-            public void run()
-            {
-                ///タッチダウン後0.5秒後、サイズ30以上なら起動→サイズの微調整は必要かも
-                if (size >= 30 && systemTrigger_flag == false) {//タッチした時の輪郭サイズが30以上=指の腹で押されたならシステム開始
+        Runnable long_press_receiver = () -> {
+            ///タッチダウン後0.5秒後、サイズ30以上なら起動→サイズの微調整は必要かも
+            if (size >= 30 && !systemTrigger_flag) {//タッチした時の輪郭サイズが30以上=指の腹で押されたならシステム開始
 
-                    ///初期タッチ時系変数：初期化///
-                    syoki_touch_x = e.getX();//初期位置計算でのみ使うタッチX座標
-                    syoki_touch_y = e.getY();//初期位置計算でのみ使うタッチY座標
+                ///初期タッチ時系変数：初期化///
+                syoki_touch_x = e.getX();//初期位置計算で使う初期タッチX座標
+                syoki_touch_y = e.getY();//初期位置計算で使う初期タッチY座標
 
-                    move_x = 0;
-                    move_y = 0;
-                    kyori_y = 0;
-                    kyori_x = 0;
+                move_x = 0;
+                move_y = 0;
+                kyori_y = 0;
+                kyori_x = 0;
 
-                    //size_first = size; //初期タッチ時のサイズ
-                    //size_height_first = size_height; //初期タッチ時のサイズ高さ
+                //size_first = size; //初期タッチ時のサイズ
+                //size_height_first = size_height; //初期タッチ時のサイズ高さ
 
-                    ///データ保存用、システム起動時に1タスクの操作時間計測用に時間計測///
-                    task_starttime = System.nanoTime();//システム起動時のシステム時間
+                ///データ保存用、システム起動時に1タスクの操作時間計測用に時間計測///
+                task_starttime = System.nanoTime();//システム起動時のシステム時間
 
-                    ///初期タッチ時系変数///
-                    syoki_yo = (float) yo;
-                    syoki_hiritu = hiritu;
-                    float tan_theta = (float)Math.tan(Math.toRadians(syoki_yo));
+                ///初期タッチ時系変数///
+                syoki_yo = (float) yo;
+                syoki_hiritu = hiritu;
+                float tan_theta = (float)Math.tan(Math.toRadians(syoki_yo));
 
-                    //タッチした際のポインター初期位置表示//
-                    pointer_x = syoki_touch_x - ((syoki_touch_y - 600) * tan_theta);
-                    pointer_y = 600;//指の方向上の画面高さ半分くらいの位置に表示させたい
+                //タッチした際のポインター初期位置表示//
+                pointer_x = syoki_touch_x - ((syoki_touch_y - 600) * tan_theta);
+                pointer_y = 600;//指の方向上の画面高さ半分くらいの位置に表示させたい
 
-                    syoki_pointerx = pointer_x;//初期位置のpointerのx座標
-                    syoki_pointery = pointer_y;//y座標
+                syoki_pointerx = pointer_x;//初期位置のpointerのx座標
+                syoki_pointery = pointer_y;//y座標
 
-                    systemTrigger_flag = true;//システムトリガーフラグをtrueにするのはここだけ→システム起動はここだけ
-                    //ポインター移動ハンドラ起動
-                    pointerhandler.post(runnable);//ポインター描画ハンドラon
-                    animationThread.start();//アニメーションスレッドをon
+                systemTrigger_flag = true;//システムトリガーフラグをtrueにするのはここだけ→システム起動はここだけ
+                //ポインター移動ハンドラ起動
+                pointerhandler.post(runnable);//ポインター描画ハンドラon
+                animationThread.start();//アニメーションスレッドをon
 
-                }
             }
         };
 
@@ -366,7 +352,7 @@ public class MainActivity extends AppCompatActivity{
                     ////データ保存用：操作終了時間////
                     task_endtime = System.nanoTime();//システム終了時間計測
 
-                    ////おインター操作時に指が離れたらタッチ転送->「ボタンがタップされたか」ではなく、「指が離れたときにポインターがターゲットボタン内なら」にしないとエラーが測れない
+                    ////ポインター操作時に指が離れたらタッチ転送->「ボタンがタップされたか」ではなく、「指が離れたときにポインターがターゲットボタン内なら」にしないとエラーが測れない
                     if (by <= pointer_finaly+50 && pointer_finaly+50 <= buttony && bx <= pointer_finalx +50 && pointer_finalx+50 <= buttonx){
                         Log.d("systemtouch","システムタッチ成功");
                         trans_touchevent();
@@ -512,14 +498,14 @@ public class MainActivity extends AppCompatActivity{
     //1タスク終了時のタスクデータ保存と１タスク毎に更新されるデータをリストに追加＋初期化
     public void dataOfTask() {
         taskcountlist.add(String.valueOf(task_count+1)); //taskcountlist[0~34]に[1~35]が入る
-        targetpointlist.add(String.valueOf(bx)+","+String.valueOf(by));
+        targetpointlist.add(bx +","+ by);
         sousatimelist.add(String.valueOf((double)(task_endtime - task_starttime) / (double)1000000000));
         errorlist.add(String.valueOf(error));
         error = "-";
         trajectorylist.add(pointer_kiseki);
         imagecount = 1;
         pointer_kiseki.clear();
-        firsttouchpointlist.add(String.valueOf(syoki_touch_x)+","+String.valueOf(syoki_touch_y));
+        firsttouchpointlist.add(syoki_touch_x +","+ syoki_touch_y);
         firstyo_list.add(String.valueOf(syoki_yo));
         firsthiritulist.add(syoki_hiritu);
 
@@ -529,7 +515,7 @@ public class MainActivity extends AppCompatActivity{
     public void saveFile() {
         //ファイル保存用//
 
-        String fileName = "task" + String.valueOf(String.format("%02d",task_count+1)) + ".txt";
+        String fileName = "task" + String.format("%02d", task_count + 1) + ".txt";
 
         try {
             //text保存
@@ -553,13 +539,13 @@ public class MainActivity extends AppCompatActivity{
     //現状、画像サイズが小さい。画像が粗い（解像度が悪すぎる）、DB使えないうえで効率的な保存＋管理方法模索中
     public void saveimageFile() {
         //ファイル保存用//
-        //画像ファイル名"1_1task01_0 ,150_001"　＝　被験者情報_タスク番号_ターゲット座標(x,y)_枚目
-        String image_fileName = statustext + "_" + String.valueOf(String.format("%02d",task_count+1)) + "_" + String.valueOf(bx)+","+String.valueOf(by) + "_" + String.valueOf(String.format("%03d",imagecount)) + ".jpeg";
+        //画像ファイル名"1_1task01_0_150_001"　＝　被験者情報_タスク番号_ターゲット座標(x,y)_枚目
+        String image_fileName = statustext + "_" + String.format("%02d",task_count+1) + "_(" + bx +"_"+ by + ")_" + String.format("%03d",imagecount) + ".jpeg";
 
        //try {
             if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
                 //画像保存
-                /**
+                /*
                 File extStrageDir = Environment.getExternalStorageDirectory();
                 File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + ftext, image_fileName);
 
@@ -634,7 +620,7 @@ public class MainActivity extends AppCompatActivity{
 
                 //////////////楕円の輪郭を取得////////////////////////////////////////
                 //輪郭画像データ(楕円パラメータなど)//
-                List<MatOfPoint> contours = new ArrayList<MatOfPoint>();//contour = 輪郭List
+                List<MatOfPoint> contours = new ArrayList<>();//contour = 輪郭List
                 Mat hierarchy = new Mat();//ヒエラルキー
                 Imgproc.findContours(mat_msk, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
                 for (int i = 0; i < contours.size(); i++) {//輪郭の長さ分ループ
@@ -677,67 +663,38 @@ public class MainActivity extends AppCompatActivity{
                             Log.d("exception", "楕円取得できずキャッチ");
                         }
                     }
-                    /////カーソル位置調整//////
-                    if (animation_flg){//アニメーションフラグの時
-                        if (pointer_y < syoki_pointery-50||syoki_pointery+50 < pointer_y) {
-                            if (pointer_y < syoki_pointery-50) {
-                                //kyori_y += 20;
-                                pointer_y -= 20;
-                                syoki_pointery -= 20;
-                            } else {
-                                //kyori_y -= 20;
-                                pointer_y += 20;
-                                syoki_pointery += 20;
-                            }
-                        }
-                        if (pointer_x < syoki_pointerx-50||syoki_pointerx+50 < pointer_x ) {
-                            if (syoki_pointerx+50 < pointer_x) {
-                                pointer_x += 20;
-                                syoki_pointerx += 20;
-                                //kyori_x -= 20;
-                            } else {
-                                pointer_x -= 20;
-                                syoki_pointerx -= 20;
-                                //kyori_x += 20;
-                            }
-                        }
-                    }else{
-                        y_kettei();//返り値:pointer_y
-                        x_kettei();//返り値:pointer_x
-                    }
                 }
             }
         });
         /////////////静電容量リスナー処理終了。静電容量画像生成の度(50ms秒毎？)起動する。ここで取得するのは「ヨー角」と「輪郭の高さ」////////////
     }
-    //y座標を設定する関数//
-    public void y_kettei() {
+    //ポインター座標(pointer_x,y)を返す関数。アニメーションも通常もこの処理に集約//
+    public void PointerSet(){
+        /////ポインター位置調整。
+        ///// アニメーションフラグがfalseの通常時は「x_kettei()」「y_kettei()」でポインター座標を決定。
+        // 初期タッチ座標と現在のムーブ座標との距離を計算し、その距離を定数倍したものをpointer座標にする。
+        ///// アニメーションフラグがtrueのアニメーション時は↓
+        // 初期座標(x,y)とアニメーション開始する計測時点の座標(x',y')がある。
+        // ２つの座標があれば２点間の角度(radian)と距離(distance)がわかる。
+        // つまり、アニメーションして(x',y')を遠くへ伸ばしたいなら、距離distanceにインクリメントし続ければ全方位にポインターが伸びることになる。
 
-        sa_y = syoki_touch_y - move_y;
 
-        if (!animation_flg) {
-            if (sa_y < 15 && -25 < sa_y) {//yの移動量が-25、+15の範囲内なら基準速(指の下方向は動かしづらいから)
-                kyori_y = (float) (sa_y * 3);
-                //pointer_y = syoki_pointery - (sa_y * 3);//(sa_y * 3)が(float)kyori
-            } else {//-25以下、+15以上のとき加速(3倍)
-                kyori_y = (float) (sa_y * 4);
-                //pointer_y = syoki_pointery - (sa_y * 4);
-            }
-        }
-    }
-    ///x座標を設定する関数////
+        //必要な変数準備
+        Point2DFloat syokipoint = new Point2DFloat(syoki_touch_x, syoki_touch_y);
+        distance = (float) Math.sqrt((move_x - syokipoint.x) * (move_x - syokipoint.x) + (move_y - syokipoint.y) * (move_y - syokipoint.y)); // 2点の距離
+        float radian = (float) Math.atan2(move_y - syokipoint.y,move_x - syokipoint.x); //2点の角度ラジアン
+        if (animation_flg){//アニメーションの時
+            //アニメーションフラグの設定部分でアニメーション範囲などの条件はクリアしている。
+            //ここでは単純な、アニメーション時のpointer_x,yの決定（制御処理）を実装
+            //ポインター座標　＋＝　2点間の距離distance+20の三角関数でｘとｙに変換したもの
+            // (座標上で言うマイナス方向も動くのか？？？？？→ラジアンがしっかり機能していれば.sinや.cosでマイナスの値になっているはず)
+            pointer_y += (float) (Math.sin(radian) * distance*+20);
+            pointer_x += (float) (Math.cos(radian) * distance*+20);
 
-    public void x_kettei() {
-        sa_x = syoki_touch_x - move_x;//単純にタッチ点の移動幅を差に
-        ///初期位置から30までは差をそのまま。それ以降は加速度的に速度を変えたい//
-        if (!animation_flg) {
-            if (sa_x < 25 && -25 < sa_x) {//xの移動差がプラマイ25以下なら加速度なし。基準速(2倍)
-                kyori_x = (float) (sa_x * 3);
-                //pointer_x = syoki_pointerx - (float) (sa_x * 3);
-            } else {//移動差が25以上のとき、大きく動かす(3倍){
-                //pointer_x = syoki_pointerx - (float) (sa_x * 4);
-                kyori_x = (float) (sa_x * 4);
-            }
+        }else{//通常時
+            pointer_y = (float) (Math.sin(radian) * distance*3);
+            pointer_x = (float) (Math.cos(radian) * distance*3);
+
         }
     }
 
@@ -797,7 +754,9 @@ public class MainActivity extends AppCompatActivity{
 
                 float x_sa = Math.abs(max_x-min_x);
                 float y_sa = Math.abs(max_y-min_y);
-                if ((x_sa <= 5 && y_sa <= 5) && (pointer_x < syoki_pointerx-50||syoki_pointerx+50 < pointer_x || pointer_y < syoki_pointery-50||syoki_pointery+50 < pointer_y)){
+                //ここで右側の初期座標と現在の座標との距離条件(アニメーション範囲にいるかどうか)を判定
+                //指がプラマイ5いないの範囲で停止しており、初期座標とムーブ座標との距離が50以上=初期タッチ座標を原点とする半径50の円より外側ならアニメーション領域
+                if ((x_sa <= 5 && y_sa <= 5) && distance > 50){
                     animation_flg = false;
                 }else{
                     animation_flg = true;

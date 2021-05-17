@@ -1,34 +1,29 @@
-package com.example.TATP_practice;
+package com.example.TouchAnglePointerSystem;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipException;
 import java.util.zip.ZipOutputStream;
 
 public class SubActivity extends AppCompatActivity {
     public TextView textView = findViewById(R.id.textView);//DBとzip圧縮できたら完了コメント出す
+    public TextView textView4 = findViewById(R.id.textView4);
     public String statustext;
     public List<String> taskcountlist = new ArrayList<>();
     public List<String> targetpointlist = new ArrayList<>();
@@ -73,17 +68,20 @@ public class SubActivity extends AppCompatActivity {
 
         // 画像byte配列（全画像分）
         MainActivity mainActivity = new MainActivity();
-        imagearray = mainActivity.sectionimagearray;
-
-        //DB操作
+        imagearray = mainActivity.sectionimagearray; //多分ここの画像データに名前はついているはずだけど、確認しないとわからないので、imagenamearrayもインテントしてる
 
 
         ///35タスクが終了し画面が遷移したら、画像フォルダを圧縮し、データを削除//
-        compress(imagearray, statustext);
+        compress(imagearray, statustext+"images");
+
+        /**
+         * データをcsvファイルに変換ー＞１セクション毎に一つのｃｓｖファイルが作成されることになる。
+         */
+        exportCsv();
 
 
-        Button bkbutton = findViewById(R.id.b);
-        bkbutton.setOnClickListener(v -> {
+        Button backbutton = findViewById(R.id.b);
+        backbutton.setOnClickListener(v -> {
             Intent restartintent = new Intent(getApplication(), StartActivity.class);
             startActivity(restartintent);
                 }
@@ -91,13 +89,11 @@ public class SubActivity extends AppCompatActivity {
     }
 
     /**
-     * @param List   inputFiles : 圧縮したいJPEGファイルのリストー＞byte配列で行けるのか微妙？？
-     * @param String outputFile : 出力先となるZIPファイルのファイル名
+     * @param inputFiles : 圧縮したいJPEGファイルのリストー＞byte配列で行けるのか微妙？？
+     * @param outputFile : 出力先となるZIPファイルのファイル名
      */
-    public void compress(List inputFiles, String outputFile) {
-        // 入力ストリーム
-        InputStream is = null;
 
+    public void compress(List inputFiles, String outputFile) {
         // ZIP形式の出力ストリーム
         ZipOutputStream zos = null;
 
@@ -114,7 +110,7 @@ public class SubActivity extends AppCompatActivity {
         try {
             for (int i = 0; i < inputFiles.size(); i++) {
                 // 入力ストリームのオブジェクトを作成
-                is = new FileInputStream((String) inputFiles.get(i));
+                InputStream is = new FileInputStream((String) inputFiles.get(i));
 
                 // Setting Filename
                 String filename = imagenamearray.get(i);
@@ -141,7 +137,7 @@ public class SubActivity extends AppCompatActivity {
 
             // 出力ストリームを閉じる
             zos.close();
-            textView.setText("圧縮＆保存完了");
+            textView.setText("画像データ圧縮＆保存完了");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -149,8 +145,65 @@ public class SubActivity extends AppCompatActivity {
         }
     }
 
-    //DB(Room)用
+    public void exportCsv(){
+        try {
+            // 出力ファイルの作成
+            PrintWriter p = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + statustext + ".csv", false),"UTF-8")));
 
+            // ヘッダーを指定する
+            p.print("被験者情報");
+            p.print(",");
+            p.print("タスク番号");
+            p.print(",");
+            p.print("ターゲット座標");
+            p.print(",");
+            p.print("操作時間");
+            p.print(",");
+            p.print("エラー");
+            p.print(",");
+            p.print("エラー回数"+errorpercent);//1セクションで一つなので、列だけ作って同じもの入れる
+            p.print(",");
+            p.print("初期指座標");
+            p.print(",");
+            p.print("初期ヨー角");
+            p.print(",");
+            p.print("初期指比率");
+            p.print(",");
+            p.print("ポインター軌跡");//１タスク毎に要素にjはいるデータが長いので最後。
+            p.print(",");
+            p.println();//画像は別で保存するのでcsvには含まない
+            // 内容をセットする
+            for(int i = 0; i < taskcountlist.size(); i++){
+                p.print(statustext);
+                p.print(",");
+                p.print(taskcountlist.get(i));
+                p.print(",");
+                p.print(targetpointlist.get(i));
+                p.print(",");
+                p.print(sousatimelist.get(i));
+                p.print(",");
+                p.print(errorlist.get(i));
+                p.print(",");
+                p.print(errorpercent);//1セクションで一つなので、列だけ作って同じもの入れる
+                p.print(",");
+                p.print(firsttouchpointlist.get(i));
+                p.print(",");
+                p.print(firstyo_list.get(i));
+                p.print(",");
+                p.print(firsthiritulist.get(i));
+                p.print(",");
+                p.print(trajectorylist.get(i));//１タスク毎に要素にjはいるデータが長いので最後。
+                p.print(",");
+                p.println();    // 改行
+            }
+            // ファイルに書き出し閉じる
+            p.close();
+            textView4.setText("csvファイル出力完了");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
 
 }
 

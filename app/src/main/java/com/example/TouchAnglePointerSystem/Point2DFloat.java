@@ -1,4 +1,4 @@
-package com.example.TATP_practice;
+package com.example.TouchAnglePointerSystem;
 
 public class Point2DFloat {
     public float x;
