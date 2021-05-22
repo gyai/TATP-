@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -22,15 +23,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class SubActivity extends AppCompatActivity {
-    public TextView textView = findViewById(R.id.textView);//DBとzip圧縮できたら完了コメント出す
-    public TextView textView4 = findViewById(R.id.textView4);
+    //public TextView textView = findViewById(R.id.textView);//csv出力とzip圧縮できたら完了コメント出す
+    //public TextView textView4 = findViewById(R.id.textView4);
     public String statustext;
     public List<String> taskcountlist = new ArrayList<>();
     public List<String> targetpointlist = new ArrayList<>();
     public List<String> sousatimelist = new ArrayList<>();
     public List<String> errorlist = new ArrayList<>();
     public String errorpercent;
-    public List<String> trajectorylist = new ArrayList<>();
+    public  List<List<String>> trajectorylist = new ArrayList<>();
     public List<String> firsttouchpointlist = new ArrayList<>();
     public List<String> firstyo_list = new ArrayList<>();
     public List<String> firsthiritulist = new ArrayList<>();
@@ -56,7 +57,7 @@ public class SubActivity extends AppCompatActivity {
         //エラー回数/35=1セクションのエラー率
         errorpercent = intent.getStringExtra("errorCount");
         // ポインター軌跡
-        trajectorylist = intent.getStringArrayListExtra("trajectory");
+        //trajectorylist = intent.getStringArrayListExtra("trajectory");//おそらく、2次元リストを配列になおしてインテントができてない。
         // 初期指座標
         firsttouchpointlist = intent.getStringArrayListExtra("firstTouchPoint");
         // 初期指ヨー角
@@ -69,15 +70,21 @@ public class SubActivity extends AppCompatActivity {
         // 画像byte配列（全画像分）
         MainActivity mainActivity = new MainActivity();
         imagearray = mainActivity.sectionimagearray; //多分ここの画像データに名前はついているはずだけど、確認しないとわからないので、imagenamearrayもインテントしてる
-
-
+        trajectorylist = mainActivity.trajectorylist;
+        //上２つの変数受け渡しできていない。
+        Log.d("csvdata",statustext);
+        Log.d("csvdata",taskcountlist.get(0));
+        Log.d("csvdata",targetpointlist.get(0));
+        Log.d("csvdata",sousatimelist.get(0));
+        Log.d("csvdata", String.valueOf(trajectorylist)); //エラーの原因。出力結果ー＞ [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []]
+        Log.d("csvdata", String.valueOf(imagearray));
         ///35タスクが終了し画面が遷移したら、画像フォルダを圧縮し、データを削除//
-        compress(imagearray, statustext+"images");
+        //compress(imagearray, statustext+"images");
 
         /**
          * データをcsvファイルに変換ー＞１セクション毎に一つのｃｓｖファイルが作成されることになる。
          */
-        exportCsv();
+        //exportCsv();
 
 
         Button backbutton = findViewById(R.id.b);
@@ -137,7 +144,7 @@ public class SubActivity extends AppCompatActivity {
 
             // 出力ストリームを閉じる
             zos.close();
-            textView.setText("画像データ圧縮＆保存完了");
+            //textView.setText("画像データ圧縮＆保存完了");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -199,7 +206,7 @@ public class SubActivity extends AppCompatActivity {
             }
             // ファイルに書き出し閉じる
             p.close();
-            textView4.setText("csvファイル出力完了");
+            //textView4.setText("csvファイル出力完了");
         } catch (IOException ex) {
             ex.printStackTrace();
         }

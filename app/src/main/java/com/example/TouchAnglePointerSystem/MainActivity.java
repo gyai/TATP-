@@ -240,7 +240,7 @@ public class MainActivity extends AppCompatActivity{
                         pointer_y = 1350;
                     }
                     if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
-                        pointer_kiseki.add(pointer_x + "," + pointer_y); //ポインター軌跡取得
+                        pointer_kiseki.add(pointer_x + "_" + pointer_y); //ポインター軌跡取得
                     }
                     if (syoki_pointerx <= 65) {
                         syoki_pointerx = 65;
@@ -274,8 +274,6 @@ public class MainActivity extends AppCompatActivity{
                     waku.setTranslationY(syoki_finaly);
                     waku.setVisibility(View.VISIBLE);
 
-                    //Log.d("pointer", String.valueOf(pointer_finalx) + " , " + String.valueOf(pointer_finaly));
-                    //Log.d("syokipointer",String.valueOf(syoki_pointerx) +" , "+ String.valueOf(syoki_pointery));
                     PointerSet();
                     pointerhandler.postDelayed(this, SAIBYOUGA_KANKAKU_MS);//0.05秒間隔でハンドラ開始してアニメーションしてる
 
@@ -359,10 +357,8 @@ public class MainActivity extends AppCompatActivity{
                     systemTrigger_flag = false;
 
                     //1タスク終了//
-                    task_count += 1;
 
-                    ///でーた保存///
-
+                    ///でーた保存or習熟度計算///
                     if (rensyuflg) {
                         ///習熟度計算////
                         syujyuku_do();
@@ -374,13 +370,13 @@ public class MainActivity extends AppCompatActivity{
                     }
 
 
-                    if (task_count == 35){
+                    if (task_count == 5){
                         Toast.makeText(this, "セクション終了:お疲れさまでした", Toast.LENGTH_SHORT).show();
                         Intent finishintent = new Intent(getApplication(), SubActivity.class);
                         //データセット
                         /*
                         必要な初期情報
-                        ・DBに保存する1セクション分のテキストデータ(被験者情報、タスク番号、ターゲット座標、操作時間、エラー、ポインター軌跡、初期指座標、初期指ヨー角、初期指の長軸短軸)
+                        ・CSVに保存する1セクション分のテキストデータ(被験者情報、タスク番号、ターゲット座標、操作時間、エラー、ポインター軌跡、初期指座標、初期指ヨー角、初期指の長軸短軸)
                         ・保存する画像データ（静電容量画像）
                          */
                         //被験者情報、(1セクション＝全体通して更新されない)
@@ -396,7 +392,7 @@ public class MainActivity extends AppCompatActivity{
                         //エラー回数/35=1セクションのエラー率
                         finishintent.putExtra("errorCount",String.valueOf(errorcount/35.0));
                         // ポインター軌跡、（３５回分）
-                        finishintent.putStringArrayListExtra("trajectory",(ArrayList)trajectorylist);
+                        //finishintent.putStringArrayListExtra("trajectory",(ArrayList)trajectorylist);
                         // 初期指座標、（３５個分）
                         finishintent.putStringArrayListExtra("firstTouchPoint",(ArrayList)firsttouchpointlist);
                         // 初期指ヨー角、（３５個分）
@@ -489,43 +485,22 @@ public class MainActivity extends AppCompatActivity{
     //1タスク終了時のタスクデータ保存と１タスク毎に更新されるデータをリストに追加＋初期化
     public void dataOfTask() {
         taskcountlist.add(String.valueOf(task_count+1)); //taskcountlist[0~34]に[1~35]が入る
+        Log.d("taskcount", String.valueOf(taskcountlist));
         targetpointlist.add(bx +","+ by);
         sousatimelist.add(String.valueOf((double)(task_endtime - task_starttime) / (double)1000000000));
         errorlist.add(String.valueOf(error));
         error = "-";
         trajectorylist.add(pointer_kiseki);
+        Log.d("trajectory", String.valueOf(trajectorylist));
         imagecount = 1;
         pointer_kiseki.clear();
         firsttouchpointlist.add(syoki_touch_x +","+ syoki_touch_y);
         firstyo_list.add(String.valueOf(syoki_yo));
         firsthiritulist.add(syoki_hiritu);
+        task_count += 1;
 
     }
 
-    // ファイルを保存関数//
-    public void saveFile() {
-        //ファイル保存用//
-
-        String fileName = "task" + String.format("%02d", task_count + 1) + ".txt";
-
-        try {
-            //text保存
-            File extStrageDir =Environment.getExternalStorageDirectory();
-            File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS+ "/"+ftext, fileName);//練習
-
-            FileOutputStream outputStream = new FileOutputStream(file);
-            OutputStreamWriter writer = new OutputStreamWriter(outputStream);
-            //FileWriter writer = new FileWriter(file);
-            writer.write(task_kekka);
-            writer.flush();
-            writer.close();
-
-
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
     // 画像ファイルを保存関数//
     //現状、画像サイズが小さい。画像が粗い（解像度が悪すぎる）、DB使えないうえで効率的な保存＋管理方法模索中
     public void saveimageFile() {
@@ -680,7 +655,7 @@ public class MainActivity extends AppCompatActivity{
         }
         pointer_y = syoki_pointery + (float) (Math.sin(radian) * distance*3);
         pointer_x = syoki_pointerx + (float) (Math.cos(radian) * distance*3);
-        Log.d("pointer", String.valueOf(distance)+"_"+String.valueOf(pointer_x) +"," + String.valueOf(pointer_y));
+        //Log.d("pointer", String.valueOf(distance)+"_"+String.valueOf(pointer_x) +"," + String.valueOf(pointer_y));
     }
 
     //bitmapに格納するpix配列にRGBデータ代入
@@ -746,10 +721,10 @@ public class MainActivity extends AppCompatActivity{
                     //指がプラマイ5いないの範囲で停止しており、初期座標とムーブ座標との距離が50以上=初期タッチ座標を原点とする半径50の円より外側ならアニメーション領域
                     if ((x_sa <= 5 && y_sa <= 5) && distance > 50) {
                         animation_flg = true;
-                        Log.d("false","hoge");
+                        //Log.d("false","hoge");
                     } else {
                         animation_flg = false;
-                        Log.d("true","huga");
+                        //Log.d("true","huga");
 
                     }
 
