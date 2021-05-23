@@ -22,6 +22,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.res.ResourcesCompat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.hcilab.libftsp.LocalDeviceHandler;
 import org.hcilab.libftsp.capacitivematrix.capmatrix.CapacitiveImageTS;
 import org.hcilab.libftsp.listeners.LocalCapImgListener;
@@ -36,18 +38,19 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
-
-
 
 public class MainActivity extends AppCompatActivity{
     static {
@@ -131,6 +134,8 @@ public class MainActivity extends AppCompatActivity{
     public  List<String> firsthiritulist = new ArrayList<>();
     public List<String> imagenamearray = new ArrayList<>();
     public List<byte[]> sectionimagearray = new ArrayList<>();
+
+    public TestData testData = TestData.getInstance();
 
 ////////////onCreate()-start/////////////////////
     @Override
@@ -379,6 +384,7 @@ public class MainActivity extends AppCompatActivity{
                         ・CSVに保存する1セクション分のテキストデータ(被験者情報、タスク番号、ターゲット座標、操作時間、エラー、ポインター軌跡、初期指座標、初期指ヨー角、初期指の長軸短軸)
                         ・保存する画像データ（静電容量画像）
                          */
+                        /**
                         //被験者情報、(1セクション＝全体通して更新されない)
                         finishintent.putExtra("statusText",statustext);
                         // タスク番号、（３５個分＝リストに格納して渡さないとだめ。。？->putStringArrayListExtraなどで可能）
@@ -393,6 +399,7 @@ public class MainActivity extends AppCompatActivity{
                         finishintent.putExtra("errorCount",String.valueOf(errorcount/35.0));
                         // ポインター軌跡、（３５回分）
                         //finishintent.putStringArrayListExtra("trajectory",(ArrayList)trajectorylist);
+                        //testData.trajectorylist(trajectorylist);
                         // 初期指座標、（３５個分）
                         finishintent.putStringArrayListExtra("firstTouchPoint",(ArrayList)firsttouchpointlist);
                         // 初期指ヨー角、（３５個分）
@@ -403,6 +410,14 @@ public class MainActivity extends AppCompatActivity{
                         finishintent.putStringArrayListExtra("imageName",(ArrayList)imagenamearray);
                         // 画像byte配列（全画像分）//データ型がintent不可だったので、アクティビティ呼び出しで受け渡す
                         //finishintent.putStringArrayListExtra("imageByte",(ArrayList)sectionimagearray);
+                         */
+                        //saveFile();
+                        //exportCsv();
+                        try {
+                            createjson();
+                        } catch (IOException ioException) {
+                            ioException.printStackTrace();
+                        }
                         startActivity(finishintent);
                     }
                     buttonSet();
@@ -486,7 +501,7 @@ public class MainActivity extends AppCompatActivity{
     public void dataOfTask() {
         taskcountlist.add(String.valueOf(task_count+1)); //taskcountlist[0~34]に[1~35]が入る
         Log.d("taskcount", String.valueOf(taskcountlist));
-        targetpointlist.add(bx +","+ by);
+        targetpointlist.add(bx +"_"+ by);
         sousatimelist.add(String.valueOf((double)(task_endtime - task_starttime) / (double)1000000000));
         errorlist.add(String.valueOf(error));
         error = "-";
@@ -494,13 +509,126 @@ public class MainActivity extends AppCompatActivity{
         Log.d("trajectory", String.valueOf(trajectorylist));
         imagecount = 1;
         pointer_kiseki.clear();
-        firsttouchpointlist.add(syoki_touch_x +","+ syoki_touch_y);
+        firsttouchpointlist.add(syoki_touch_x +"_"+ syoki_touch_y);
         firstyo_list.add(String.valueOf(syoki_yo));
         firsthiritulist.add(syoki_hiritu);
         task_count += 1;
 
     }
+    public void createjson() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String,Object> resultMap = new HashMap<String, Object>();
+        resultMap.put("statusText",statustext);
+        resultMap.put("taskCount",(ArrayList)taskcountlist);
+        resultMap.put("targetPoint",(ArrayList)targetpointlist);
+        resultMap.put("sousaTime",(ArrayList)sousatimelist);
+        resultMap.put("errorString",(ArrayList)errorlist);
+        resultMap.put("errorCount",errorcount/35.0);
 
+        Log.d("trajectry", String.valueOf(trajectorylist));
+        //List<list<string>>を2次元配列に変換
+        for (List<String> value: trajectorylist){
+            value.toArray(new String[value.size()]);
+        }
+        trajectorylist.toArray(new String[trajectorylist.size()]);
+        resultMap.put("trajectory",trajectorylist);
+
+        resultMap.put("firstYo",(ArrayList)firstyo_list);
+        resultMap.put("firstHiritu",(ArrayList)firsthiritulist);
+        resultMap.put("imageName",(ArrayList)imagenamearray);
+        Log.d("imagename", String.valueOf(imagenamearray));
+        //List<list<string>>を2次元配列に変換
+        for (List<String> value: trajectorylist){
+            value.toArray(new String[value.size()]);
+        }
+        trajectorylist.toArray(new String[trajectorylist.size()]);
+        resultMap.put("firstTouchPoint",(ArrayList)firsttouchpointlist);
+
+        mapper.writeValue(new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + statustext + ".json"),resultMap);
+    }
+    // ファイルを保存関数//
+    public void saveFile() {
+        //ファイル保存用//
+
+        String fileName = "task" + String.format("%02d", task_count + 1) + ".txt";
+
+        try {
+            //text保存
+            File extStrageDir =Environment.getExternalStorageDirectory();
+            File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS+ "/"+ftext, fileName);//練習
+
+            FileOutputStream outputStream = new FileOutputStream(file);
+            OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+            //FileWriter writer = new FileWriter(file);
+            writer.write(task_kekka);
+            writer.flush();
+            writer.close();
+
+
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public void exportCsv(){
+        try {
+            // 出力ファイルの作成
+            PrintWriter p = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + statustext + ".csv", false),"UTF-8")));
+
+            // ヘッダーを指定する
+            p.print("被験者情報");
+            p.print(",");
+            p.print("タスク番号");
+            p.print(",");
+            p.print("ターゲット座標");
+            p.print(",");
+            p.print("操作時間");
+            p.print(",");
+            p.print("エラー");
+            p.print(",");
+            p.print("エラー回数"+errorcount);//1セクションで一つなので、列だけ作って同じもの入れる
+            p.print(",");
+            p.print("初期指座標");
+            p.print(",");
+            p.print("初期ヨー角");
+            p.print(",");
+            p.print("初期指比率");
+            p.print(",");
+            p.print("ポインター軌跡");//１タスク毎に要素にjはいるデータが長いので最後。
+            p.print(",");
+            p.println();//画像は別で保存するのでcsvには含まない
+            // 内容をセットする
+            for(int i = 0; i < taskcountlist.size(); i++){
+                p.print(statustext);
+                p.print(",");
+                p.print(taskcountlist.get(i));
+                p.print(",");
+                p.print(targetpointlist.get(i));
+                p.print(",");
+                p.print(sousatimelist.get(i));
+                p.print(",");
+                p.print(errorlist.get(i));
+                p.print(",");
+                p.print(errorcount/35.0);//1セクションで一つなので、列だけ作って同じもの入れる
+                p.print(",");
+                p.print(firsttouchpointlist.get(i));
+                p.print(",");
+                p.print(firstyo_list.get(i));
+                p.print(",");
+                p.print(firsthiritulist.get(i));
+                p.print(",");
+                p.print(trajectorylist.get(i));//１タスク毎に要素にjはいるデータが長いので最後。
+                p.print(",");
+                p.println();    // 改行
+            }
+            // ファイルに書き出し閉じる
+            p.close();
+            //textView4.setText("csvファイル出力完了");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
     // 画像ファイルを保存関数//
     //現状、画像サイズが小さい。画像が粗い（解像度が悪すぎる）、DB使えないうえで効率的な保存＋管理方法模索中
     public void saveimageFile() {
@@ -508,27 +636,28 @@ public class MainActivity extends AppCompatActivity{
         //画像ファイル名"1_1task01_0_150_001"　＝　被験者情報_タスク番号_ターゲット座標(x,y)_枚目
         String image_fileName = statustext + "_" + String.format("%02d",task_count+1) + "_(" + bx +"_"+ by + ")_" + String.format("%03d",imagecount) + ".jpeg";
 
-       //try {
+       try {
             if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
                 //画像保存
-                /*
+
                 File extStrageDir = Environment.getExternalStorageDirectory();
                 File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + ftext, image_fileName);
 
                 FileOutputStream outStream = new FileOutputStream(i_file);
                 bmpimage.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
                 outStream.close();
-                 */
+                /**
                 imagenamearray.add(image_fileName);//画像保存する際にファイル名も保存
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 bmpimage.compress(Bitmap.CompressFormat.JPEG, 100, baos);
                 byte[] jpgarr = baos.toByteArray();
                 sectionimagearray.add(jpgarr);//imagenamearrayリストに対応した要素番号に、jpeg画像のbyte配列データ格納
+                 */
             }
-        //}
-        //catch (IOException ioExceptione) {
-        //    ioExceptione.printStackTrace();
-        //}
+        }
+        catch (IOException ioExceptione) {
+            ioExceptione.printStackTrace();
+        }
     }
 
 

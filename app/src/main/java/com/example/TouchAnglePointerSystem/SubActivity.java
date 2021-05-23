@@ -42,7 +42,7 @@ public class SubActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sub);
-
+        /**
         Intent intent = this.getIntent();
         //被験者情報、(1セクション＝全体通して更新されない)
         statustext = intent.getStringExtra("statusText");
