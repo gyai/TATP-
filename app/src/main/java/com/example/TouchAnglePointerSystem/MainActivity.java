@@ -38,12 +38,9 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -113,6 +110,9 @@ public class MainActivity extends AppCompatActivity{
     public static int bx = 0;
     public static int by = 0;
     public ArrayList<Integer> arrayindex = new ArrayList<Integer>();
+
+    //巻き戻しボタン
+    public Button makimodoshibtn;
 
     //データ保存用//
     public int task_count = 0;
@@ -244,9 +244,8 @@ public class MainActivity extends AppCompatActivity{
                     } else if (pointer_y >= 1350) {
                         pointer_y = 1350;
                     }
-                    if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
-                        pointer_kiseki.add(pointer_x + "_" + pointer_y); //ポインター軌跡取得
-                    }
+
+
                     if (syoki_pointerx <= 65) {
                         syoki_pointerx = 65;
                     } else if (syoki_pointerx >= 1045) {
@@ -265,6 +264,10 @@ public class MainActivity extends AppCompatActivity{
                     syoki_finaly = syoki_pointery - 150;
 
                     if (!rensyuflg) {
+                        //ポインター軌跡（１タスク分）
+                        if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
+                            pointer_kiseki.add(pointer_x + "_" + pointer_y); //ポインター軌跡取得
+                        }
                         //静電容量画像保存
                         saveimageFile();
                         imagecount += 1;
@@ -378,41 +381,7 @@ public class MainActivity extends AppCompatActivity{
                     if (task_count == 5){
                         Toast.makeText(this, "セクション終了:お疲れさまでした", Toast.LENGTH_SHORT).show();
                         Intent finishintent = new Intent(getApplication(), SubActivity.class);
-                        //データセット
-                        /*
-                        必要な初期情報
-                        ・CSVに保存する1セクション分のテキストデータ(被験者情報、タスク番号、ターゲット座標、操作時間、エラー、ポインター軌跡、初期指座標、初期指ヨー角、初期指の長軸短軸)
-                        ・保存する画像データ（静電容量画像）
-                         */
-                        /**
-                        //被験者情報、(1セクション＝全体通して更新されない)
-                        finishintent.putExtra("statusText",statustext);
-                        // タスク番号、（３５個分＝リストに格納して渡さないとだめ。。？->putStringArrayListExtraなどで可能）
-                        finishintent.putStringArrayListExtra("taskCount",(ArrayList)taskcountlist);
-                        // ターゲット座標(x,y)、（３５個分）
-                        finishintent.putStringArrayListExtra("targetPoint",(ArrayList)targetpointlist);
-                        // 操作時間、（３５個分）
-                        finishintent.putStringArrayListExtra("sousaTime",(ArrayList)sousatimelist);
-                        // エラー、（３５個分）
-                        finishintent.putStringArrayListExtra("errorString",(ArrayList)errorlist);
-                        //エラー回数/35=1セクションのエラー率
-                        finishintent.putExtra("errorCount",String.valueOf(errorcount/35.0));
-                        // ポインター軌跡、（３５回分）
-                        //finishintent.putStringArrayListExtra("trajectory",(ArrayList)trajectorylist);
-                        //testData.trajectorylist(trajectorylist);
-                        // 初期指座標、（３５個分）
-                        finishintent.putStringArrayListExtra("firstTouchPoint",(ArrayList)firsttouchpointlist);
-                        // 初期指ヨー角、（３５個分）
-                        finishintent.putStringArrayListExtra("firstYo",(ArrayList)firstyo_list);
-                        // 初期指の長軸短軸（３５個分）。比率＝長軸長さ/短軸長さ。
-                        finishintent.putStringArrayListExtra("firstHiritu",(ArrayList)firsthiritulist);
-                        // 画像名前（全画像分）
-                        finishintent.putStringArrayListExtra("imageName",(ArrayList)imagenamearray);
-                        // 画像byte配列（全画像分）//データ型がintent不可だったので、アクティビティ呼び出しで受け渡す
-                        //finishintent.putStringArrayListExtra("imageByte",(ArrayList)sectionimagearray);
-                         */
-                        //saveFile();
-                        //exportCsv();
+
                         try {
                             createjson();
                         } catch (IOException ioException) {
@@ -432,8 +401,6 @@ public class MainActivity extends AppCompatActivity{
                 move_y = 0;
                 animation_flg = false;
                 error ="-";
-
-                //animationThread.interrupt();//加速度スレッドをinterruptに強制的に移す。と、例外処理を認識してスレッドが止まる。→止まってない。改善する
 
 
                 break;
@@ -462,8 +429,6 @@ public class MainActivity extends AppCompatActivity{
                     Log.d("アップ", "システムアップ");
                     ///楕円検出できなかったらこれを呼び出す。全リセット//
                     systemTrigger_flag = false;
-                    //ymove_flg = false;
-                    //xmove_flg = false;
                     animation_flg = false;
                     long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
                     pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
@@ -471,6 +436,35 @@ public class MainActivity extends AppCompatActivity{
 
                 }
                 Log.d("tag","buttonTouch");
+                return false;
+            }
+        });
+
+        //巻き戻しボタンおされた時の動き
+        makimodoshibtn.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                //1タスクで巻き戻さないといけない変数+画像データ
+                task_count -= 1;
+                task_starttime = 0;//巻き戻しボタンを押したときにタッチアップその他が動かなければこれで耐える
+                pointer_kiseki.clear();
+                syoki_touch_x = 10000;//ありえない数値
+                syoki_touch_y = 10000;
+                syoki_yo = 10000;
+                syoki_hiritu= "";
+                //画像は随時保存しているので、前回までの画像を消さないといけない。
+                //画像データは名前をタスクカウントにしているから、正規表現でフォルダ検索して画像データ検索すればいいかも？
+                //同じ名前で保存するので上書きされるかも？？？？
+                imagecount = 1;
+                ///フラグや変数諸々初期化
+                long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
+                pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
+                pointerimage.setVisibility(View.GONE);
+                systemTrigger_flag = false;
+                move_x = 0;
+                move_y = 0;
+                animation_flg = false;
+                error ="-";
                 return false;
             }
         });
@@ -546,89 +540,7 @@ public class MainActivity extends AppCompatActivity{
 
         mapper.writeValue(new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + statustext + ".json"),resultMap);
     }
-    // ファイルを保存関数//
-    public void saveFile() {
-        //ファイル保存用//
 
-        String fileName = "task" + String.format("%02d", task_count + 1) + ".txt";
-
-        try {
-            //text保存
-            File extStrageDir =Environment.getExternalStorageDirectory();
-            File file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS+ "/"+ftext, fileName);//練習
-
-            FileOutputStream outputStream = new FileOutputStream(file);
-            OutputStreamWriter writer = new OutputStreamWriter(outputStream);
-            //FileWriter writer = new FileWriter(file);
-            writer.write(task_kekka);
-            writer.flush();
-            writer.close();
-
-
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    public void exportCsv(){
-        try {
-            // 出力ファイルの作成
-            PrintWriter p = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + statustext + ".csv", false),"UTF-8")));
-
-            // ヘッダーを指定する
-            p.print("被験者情報");
-            p.print(",");
-            p.print("タスク番号");
-            p.print(",");
-            p.print("ターゲット座標");
-            p.print(",");
-            p.print("操作時間");
-            p.print(",");
-            p.print("エラー");
-            p.print(",");
-            p.print("エラー回数"+errorcount);//1セクションで一つなので、列だけ作って同じもの入れる
-            p.print(",");
-            p.print("初期指座標");
-            p.print(",");
-            p.print("初期ヨー角");
-            p.print(",");
-            p.print("初期指比率");
-            p.print(",");
-            p.print("ポインター軌跡");//１タスク毎に要素にjはいるデータが長いので最後。
-            p.print(",");
-            p.println();//画像は別で保存するのでcsvには含まない
-            // 内容をセットする
-            for(int i = 0; i < taskcountlist.size(); i++){
-                p.print(statustext);
-                p.print(",");
-                p.print(taskcountlist.get(i));
-                p.print(",");
-                p.print(targetpointlist.get(i));
-                p.print(",");
-                p.print(sousatimelist.get(i));
-                p.print(",");
-                p.print(errorlist.get(i));
-                p.print(",");
-                p.print(errorcount/35.0);//1セクションで一つなので、列だけ作って同じもの入れる
-                p.print(",");
-                p.print(firsttouchpointlist.get(i));
-                p.print(",");
-                p.print(firstyo_list.get(i));
-                p.print(",");
-                p.print(firsthiritulist.get(i));
-                p.print(",");
-                p.print(trajectorylist.get(i));//１タスク毎に要素にjはいるデータが長いので最後。
-                p.print(",");
-                p.println();    // 改行
-            }
-            // ファイルに書き出し閉じる
-            p.close();
-            //textView4.setText("csvファイル出力完了");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
     // 画像ファイルを保存関数//
     //現状、画像サイズが小さい。画像が粗い（解像度が悪すぎる）、DB使えないうえで効率的な保存＋管理方法模索中
     public void saveimageFile() {
@@ -659,7 +571,6 @@ public class MainActivity extends AppCompatActivity{
             ioExceptione.printStackTrace();
         }
     }
-
 
 
 ///タッチ点転送関数//
