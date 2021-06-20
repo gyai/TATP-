@@ -38,6 +38,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -128,7 +129,8 @@ public class MainActivity extends AppCompatActivity{
     public  List<String> targetpointlist = new ArrayList<>();
     public  List<String> sousatimelist = new ArrayList<>();
     public  List<String> errorlist = new ArrayList<>();
-    public  List<List<String>> trajectorylist = new ArrayList<>();
+    //public  List<List<String>> trajectorylist = new ArrayList<>();
+    public String[][] trajectryArray = new String[35][];
     public  List<String> firsttouchpointlist = new ArrayList<>();
     public  List<String> firstyo_list = new ArrayList<>();
     public  List<String> firsthiritulist = new ArrayList<>();
@@ -265,9 +267,9 @@ public class MainActivity extends AppCompatActivity{
 
                     if (!rensyuflg) {
                         //ポインター軌跡（１タスク分）
-                        if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
-                            pointer_kiseki.add(pointer_x + "_" + pointer_y); //ポインター軌跡取得
-                        }
+
+                        pointer_kiseki.add(pointer_x + "_" + pointer_y); //ポインター軌跡取得
+
                         //静電容量画像保存
                         saveimageFile();
                         imagecount += 1;
@@ -441,6 +443,7 @@ public class MainActivity extends AppCompatActivity{
         });
 
         //巻き戻しボタンおされた時の動き
+        /**
         makimodoshibtn.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -468,6 +471,7 @@ public class MainActivity extends AppCompatActivity{
                 return false;
             }
         });
+         */
 
         return false;
     }
@@ -499,8 +503,10 @@ public class MainActivity extends AppCompatActivity{
         sousatimelist.add(String.valueOf((double)(task_endtime - task_starttime) / (double)1000000000));
         errorlist.add(String.valueOf(error));
         error = "-";
-        trajectorylist.add(pointer_kiseki);
-        Log.d("trajectory", String.valueOf(trajectorylist));
+        //trajectorylist.add(pointer_kiseki);
+        //Log.d("trajectory", String.valueOf(trajectorylist));
+        String[] poiarr = pointer_kiseki.toArray(new String[pointer_kiseki.size()]);
+        trajectryArray[task_count] = poiarr;
         imagecount = 1;
         pointer_kiseki.clear();
         firsttouchpointlist.add(syoki_touch_x +"_"+ syoki_touch_y);
@@ -518,24 +524,20 @@ public class MainActivity extends AppCompatActivity{
         resultMap.put("sousaTime",(ArrayList)sousatimelist);
         resultMap.put("errorString",(ArrayList)errorlist);
         resultMap.put("errorCount",errorcount/35.0);
-
+/**
         Log.d("trajectry", String.valueOf(trajectorylist));
         //List<list<string>>を2次元配列に変換
+        ArrayList<String[]> traarray = new ArrayList<>();
         for (List<String> value: trajectorylist){
-            value.toArray(new String[value.size()]);
+            traarray.add(value.toArray(new String[value.size()]));
         }
-        trajectorylist.toArray(new String[trajectorylist.size()]);
-        resultMap.put("trajectory",trajectorylist);
-
+        //Log.d("trajectry", String.valueOf(traarray));///入ってない。
+        resultMap.put("trajectory",traarray);//１次元配列にして保存する。imagenamearrayと連動しているはずなので、軌跡検索する際はimagenamearrayから関連させて判断する。
+*/
+        resultMap.put("trajectory",trajectryArray);//2次元配列に全軌跡入った。
         resultMap.put("firstYo",(ArrayList)firstyo_list);
         resultMap.put("firstHiritu",(ArrayList)firsthiritulist);
         resultMap.put("imageName",(ArrayList)imagenamearray);
-        Log.d("imagename", String.valueOf(imagenamearray));
-        //List<list<string>>を2次元配列に変換
-        for (List<String> value: trajectorylist){
-            value.toArray(new String[value.size()]);
-        }
-        trajectorylist.toArray(new String[trajectorylist.size()]);
         resultMap.put("firstTouchPoint",(ArrayList)firsttouchpointlist);
 
         mapper.writeValue(new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + statustext + ".json"),resultMap);
@@ -548,28 +550,38 @@ public class MainActivity extends AppCompatActivity{
         //画像ファイル名"1_1task01_0_150_001"　＝　被験者情報_タスク番号_ターゲット座標(x,y)_枚目
         String image_fileName = statustext + "_" + String.format("%02d",task_count+1) + "_(" + bx +"_"+ by + ")_" + String.format("%03d",imagecount) + ".jpeg";
 
-       try {
-            if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
-                //画像保存
 
-                File extStrageDir = Environment.getExternalStorageDirectory();
-                File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + ftext, image_fileName);
+        if (imagecount == 1 || imagecount%5 == 0) {//imagecountが1か5の倍数の時だけ保存→画像データ量1/3に
+            //画像保存
+            /**
+            File extStrageDir = Environment.getExternalStorageDirectory();
+            File i_file = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + ftext, image_fileName);
 
-                FileOutputStream outStream = new FileOutputStream(i_file);
-                bmpimage.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
-                outStream.close();
-                /**
-                imagenamearray.add(image_fileName);//画像保存する際にファイル名も保存
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bmpimage.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-                byte[] jpgarr = baos.toByteArray();
-                sectionimagearray.add(jpgarr);//imagenamearrayリストに対応した要素番号に、jpeg画像のbyte配列データ格納
-                 */
+            FileOutputStream outStream = new FileOutputStream(i_file);
+            bmpimage.compress(Bitmap.CompressFormat.JPEG, 100, outStream);
+            outStream.close();
+            */
+            imagenamearray.add(image_fileName);//画像保存する際にファイル名も保存
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bmpimage.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+            byte[] jpgarr = baos.toByteArray();//jpgarrにbyte配列が入っている
+
+            File extStrageDir = Environment.getExternalStorageDirectory();
+            File imagesFolder = new File(extStrageDir.getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS, statustext);
+            imagesFolder.mkdirs();//ダウンロード下に画像保存用フォルダ作成
+
+            final File photo= new File(imagesFolder, image_fileName);
+            try
+            {
+                FileOutputStream fos=new FileOutputStream(photo.getPath());
+                fos.write(jpgarr);
+                fos.close();
+            }
+            catch(Exception e)
+            {
             }
         }
-        catch (IOException ioExceptione) {
-            ioExceptione.printStackTrace();
-        }
+
     }
 
 
