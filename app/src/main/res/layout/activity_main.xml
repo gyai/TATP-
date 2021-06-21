@@ -20,7 +20,8 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/sousawaku" />
+            app:srcCompat="@drawable/sousawaku"
+            android:contentDescription="@string/todo" />
 
         <Button
             android:id="@+id/button"
@@ -28,7 +29,8 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="350dp"
             android:stateListAnimator="@null"
-            android:text="@string/r_b"
+            android:text="@string/target"
+            android:textSize="8dp"
             app:layout_constraintBottom_toTopOf="@+id/imageView"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -48,7 +50,7 @@
             android:id="@+id/wakuimage"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:contentDescription="TODO"
+            android:contentDescription="@string/todo"
             app:layout_constraintStart_toStartOf="@+id/button"
             app:layout_constraintTop_toTopOf="@+id/button"
             app:srcCompat="@drawable/waku" />
@@ -64,16 +66,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.872" />
-
-        <Button
-            android:id="@+id/backbtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginBottom="16dp"
-            android:text="巻き戻し"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="@+id/textView2" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

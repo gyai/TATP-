@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity{
     public float pointer_finalx, pointer_finaly;//受け取った最終的なポインタ位置
     public float distance;
     public float size_height;
+    public float syoki_tanjiku;
 
 
     static final int SAIBYOUGA_KANKAKU_MS = 50; //pointerの再描画の間隔（ms）。小さいほどアニメーションが滑らかに。
@@ -111,9 +112,6 @@ public class MainActivity extends AppCompatActivity{
     public static int bx = 0;
     public static int by = 0;
     public ArrayList<Integer> arrayindex = new ArrayList<Integer>();
-
-    //巻き戻しボタン
-    public Button makimodoshibtn;
 
     //データ保存用//
     public int task_count = 0;
@@ -169,6 +167,9 @@ public class MainActivity extends AppCompatActivity{
         //タッチ時に指の接触面の大きさを計測したいので、最初にリスナー起動必要あり//
         localDeviceHandler.startHandler();//静電容量リスナー（スレッド）起動
         seidenListener();
+
+
+
     }
 
     public void layoutSetting(){
@@ -186,7 +187,7 @@ public class MainActivity extends AppCompatActivity{
         pointerimage.setLayoutParams(imagelp);
         pointerimage.setVisibility(View.GONE);//なかったようにする,非表示
 
-        ConstraintLayout.LayoutParams wakulp = new ConstraintLayout.LayoutParams(200,200);
+        ConstraintLayout.LayoutParams wakulp = new ConstraintLayout.LayoutParams(350,350);
         waku = findViewById(R.id.wakuimage);
         waku.setImageResource(R.drawable.waku);
         waku.setLayoutParams(wakulp);
@@ -262,8 +263,8 @@ public class MainActivity extends AppCompatActivity{
                     pointer_finalx = pointer_x - 50;//受け取った転送先座標からポインター画像の幅/2を引いて、座標を画像の真ん中に。
                     pointer_finaly = pointer_y - 50;
 
-                    syoki_finalx = syoki_pointerx - 150;
-                    syoki_finaly = syoki_pointery - 150;
+                    syoki_finalx = syoki_pointerx - 175;
+                    syoki_finaly = syoki_pointery - 175;
 
                     if (!rensyuflg) {
                         //ポインター軌跡（１タスク分）
@@ -312,6 +313,7 @@ public class MainActivity extends AppCompatActivity{
                 ///初期タッチ時系変数///
                 syoki_yo = (float) yo;
                 syoki_hiritu = hiritu;
+                syoki_tanjiku = (float)box.size.width;//初期短軸
                 float tan_theta = (float)Math.tan(Math.toRadians(syoki_yo));
 
                 //タッチした際のポインター初期位置表示//
@@ -353,14 +355,15 @@ public class MainActivity extends AppCompatActivity{
                     task_endtime = System.nanoTime();//システム終了時間計測
 
                     ////ポインター操作時に指が離れたらタッチ転送->「ボタンがタップされたか」ではなく、「指が離れたときにポインターがターゲットボタン内なら」にしないとエラーが測れない
-                    if (by <= pointer_finaly+50 && pointer_finaly+50 <= buttony && bx <= pointer_finalx +50 && pointer_finalx+50 <= buttonx){
-                        Log.d("systemtouch","システムタッチ成功");
+                    //if (by <= pointer_finaly+50 && pointer_finaly+50 <= buttony && bx <= pointer_finalx +50 && pointer_finalx+50 <= buttonx){
+                    if (by <= pointer_y && pointer_y <= buttony && bx <= pointer_x && pointer_x <= buttonx){
+                        Log.d("systemtouch","成功：タゲ"+bx +"_"+ by+"ポインタ"+pointer_x + "_" + pointer_y);
                         trans_touchevent();
                     }else{
                         //データ保存用：error回数カウント
                         errorcount += 1;
                         error = "error";
-                        Log.d("systemtouch","システムタッチ失敗");
+                        Log.d("systemtouch","失敗：タゲ"+bx +"_"+ by+"ポインタ"+pointer_x + "_" + pointer_y);
                         trans_touchevent();
                     }
                     //システムトリガー終了し、諸々の処理を動かさないように//
@@ -372,11 +375,10 @@ public class MainActivity extends AppCompatActivity{
                     if (rensyuflg) {
                         ///習熟度計算////
                         syujyuku_do();
+                        task_count += 1;
                     }else{
                         dataOfTask(); //1タスク毎の諸々のデータを保存
 
-                        //saveFile();
-                        //画像データ保存もimageview配列使ってここにしたい（画像データ1万枚近くを操作中に保存するのは処理思い原因になりそう）//
                     }
 
 
@@ -441,37 +443,34 @@ public class MainActivity extends AppCompatActivity{
                 return false;
             }
         });
-
+        /**なぜかエラー。nullオブジェクト？？？
         //巻き戻しボタンおされた時の動き
-        /**
-        makimodoshibtn.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                //1タスクで巻き戻さないといけない変数+画像データ
-                task_count -= 1;
-                task_starttime = 0;//巻き戻しボタンを押したときにタッチアップその他が動かなければこれで耐える
-                pointer_kiseki.clear();
-                syoki_touch_x = 10000;//ありえない数値
-                syoki_touch_y = 10000;
-                syoki_yo = 10000;
-                syoki_hiritu= "";
-                //画像は随時保存しているので、前回までの画像を消さないといけない。
-                //画像データは名前をタスクカウントにしているから、正規表現でフォルダ検索して画像データ検索すればいいかも？
-                //同じ名前で保存するので上書きされるかも？？？？
-                imagecount = 1;
-                ///フラグや変数諸々初期化
-                long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
-                pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
-                pointerimage.setVisibility(View.GONE);
-                systemTrigger_flag = false;
-                move_x = 0;
-                move_y = 0;
-                animation_flg = false;
-                error ="-";
-                return false;
-            }
+        makimodoshibtn.setOnClickListener( v -> {
+            //1タスクで巻き戻さないといけない変数+画像データ
+            task_count -= 1;
+            task_starttime = 0;//巻き戻しボタンを押したときにタッチアップその他が動かなければこれで耐える
+            pointer_kiseki.clear();
+            syoki_touch_x = 10000;//ありえない数値
+            syoki_touch_y = 10000;
+            syoki_yo = 10000;
+            syoki_hiritu= "";
+            //画像は随時保存しているので、前回までの画像を消さないといけない。
+            //画像データは名前をタスクカウントにしているから、正規表現でフォルダ検索して画像データ検索すればいいかも？
+            //同じ名前で保存するので上書きされるかも？？？？
+            imagecount = 1;
+            ///フラグや変数諸々初期化
+            //long_press_handler.removeCallbacks( long_press_receiver );    // 長押し中に指を上げたら長押しhandlerの処理を中止
+            //pointerhandler.removeCallbacks(runnable);//指を離したらhandler停止
+            pointerimage.setVisibility(View.GONE);
+            systemTrigger_flag = false;
+            move_x = 0;
+            move_y = 0;
+            animation_flg = false;
+            error ="-";
+            //return false;
+
         });
-         */
+*/
 
         return false;
     }
