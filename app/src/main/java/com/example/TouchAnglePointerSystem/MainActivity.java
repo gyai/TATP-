@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity{
         System.loadLibrary("opencv_java3");
     }
 //実験用保存先フォルダ名+練習か本番か
-    public String ftext = "1-1";//被験者番号-実験回数
+
     public Boolean rensyuflg = false;
     public String statustext;
 
@@ -120,7 +120,6 @@ public class MainActivity extends AppCompatActivity{
     public String error = "-";
     public int errorcount = 0;
     public List<String> pointer_kiseki = new ArrayList<>();
-    public String task_kekka;
     public int imagecount = 1;
 
     public  List<String> taskcountlist = new ArrayList<>();
@@ -133,9 +132,8 @@ public class MainActivity extends AppCompatActivity{
     public  List<String> firstyo_list = new ArrayList<>();
     public  List<String> firsthiritulist = new ArrayList<>();
     public List<String> imagenamearray = new ArrayList<>();
-    public List<byte[]> sectionimagearray = new ArrayList<>();
 
-    public TestData testData = TestData.getInstance();
+    public TestData testData = TestData.getInstance();//なんのために作ったんだ？？消して良いかも？
 
 ////////////onCreate()-start/////////////////////
     @Override
@@ -283,7 +281,7 @@ public class MainActivity extends AppCompatActivity{
 
                     waku.setTranslationX(syoki_finalx);
                     waku.setTranslationY(syoki_finaly);
-                    waku.setVisibility(View.VISIBLE);
+                    //waku.setVisibility(View.VISIBLE);
 
                     PointerSet();
                     pointerhandler.postDelayed(this, SAIBYOUGA_KANKAKU_MS);//0.05秒間隔でハンドラ開始してアニメーションしてる
@@ -291,7 +289,7 @@ public class MainActivity extends AppCompatActivity{
 
                 }else{//指が離れている時
                     pointerimage.setVisibility(View.GONE);//指が離れたらポインタ隠す
-                    waku.setVisibility(View.GONE);
+                    //waku.setVisibility(View.GONE);
                 }
             }
         };
@@ -358,14 +356,13 @@ public class MainActivity extends AppCompatActivity{
                     //if (by <= pointer_finaly+50 && pointer_finaly+50 <= buttony && bx <= pointer_finalx +50 && pointer_finalx+50 <= buttonx){
                     if (by <= pointer_y && pointer_y <= buttony && bx <= pointer_x && pointer_x <= buttonx){
                         Log.d("systemtouch","成功：タゲ"+bx +"_"+ by+"ポインタ"+pointer_x + "_" + pointer_y);
-                        trans_touchevent();
                     }else{
                         //データ保存用：error回数カウント
                         errorcount += 1;
                         error = "error";
                         Log.d("systemtouch","失敗：タゲ"+bx +"_"+ by+"ポインタ"+pointer_x + "_" + pointer_y);
-                        trans_touchevent();
                     }
+                    trans_touchevent();
                     //システムトリガー終了し、諸々の処理を動かさないように//
                     systemTrigger_flag = false;
 
@@ -378,11 +375,9 @@ public class MainActivity extends AppCompatActivity{
                         task_count += 1;
                     }else{
                         dataOfTask(); //1タスク毎の諸々のデータを保存
-
                     }
 
-
-                    if (task_count == 5){
+                    if (task_count == 35){
                         Toast.makeText(this, "セクション終了:お疲れさまでした", Toast.LENGTH_SHORT).show();
                         Intent finishintent = new Intent(getApplication(), SubActivity.class);
 
@@ -468,7 +463,6 @@ public class MainActivity extends AppCompatActivity{
             animation_flg = false;
             error ="-";
             //return false;
-
         });
 */
 
@@ -517,12 +511,12 @@ public class MainActivity extends AppCompatActivity{
     public void createjson() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         Map<String,Object> resultMap = new HashMap<String, Object>();
-        resultMap.put("statusText",statustext);
-        resultMap.put("taskCount",(ArrayList)taskcountlist);
-        resultMap.put("targetPoint",(ArrayList)targetpointlist);
-        resultMap.put("sousaTime",(ArrayList)sousatimelist);
-        resultMap.put("errorString",(ArrayList)errorlist);
-        resultMap.put("errorCount",errorcount/35.0);
+        resultMap.put("statusText",statustext);//最初のページで入力した被験者情報
+        resultMap.put("taskCount",(ArrayList)taskcountlist);//タスク番号*35
+        resultMap.put("targetPoint",(ArrayList)targetpointlist);//ターゲットの(左上)位置*35
+        resultMap.put("sousaTime",(ArrayList)sousatimelist);//1タスクごとの操作時間*35
+        resultMap.put("errorString",(ArrayList)errorlist);//1タスクごとのエラー*35
+        resultMap.put("errorCount",errorcount/35.0);//セクションのエラー率
 /**
         Log.d("trajectry", String.valueOf(trajectorylist));
         //List<list<string>>を2次元配列に変換
@@ -533,13 +527,13 @@ public class MainActivity extends AppCompatActivity{
         //Log.d("trajectry", String.valueOf(traarray));///入ってない。
         resultMap.put("trajectory",traarray);//１次元配列にして保存する。imagenamearrayと連動しているはずなので、軌跡検索する際はimagenamearrayから関連させて判断する。
 */
-        resultMap.put("trajectory",trajectryArray);//2次元配列に全軌跡入った。
-        resultMap.put("firstYo",(ArrayList)firstyo_list);
-        resultMap.put("firstHiritu",(ArrayList)firsthiritulist);
-        resultMap.put("imageName",(ArrayList)imagenamearray);
-        resultMap.put("firstTouchPoint",(ArrayList)firsttouchpointlist);
-
-        mapper.writeValue(new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + statustext + ".json"),resultMap);
+        resultMap.put("trajectory",trajectryArray);//2次元配列に全軌跡入った。１次元目のインデックス数*35。2次元目に可変長の軌跡データが全部入っている
+        resultMap.put("firstYo",(ArrayList)firstyo_list);//初期の指の向き*35
+        resultMap.put("firstHiritu",(ArrayList)firsthiritulist);//初期の指の比率(縦/横)*35　※縦と横は入れ替わるので注意　→　これも軌跡と同じく全操作分取るべき？
+        resultMap.put("imageName",(ArrayList)imagenamearray);//画像の名前*35*1タスク毎の長さ
+        resultMap.put("firstTouchPoint",(ArrayList)firsttouchpointlist);//初期指のタッチ点*35
+        //mapper.writeValue(new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + statustext + ".json"),resultMap);
+        mapper.writeValue(new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + Environment.DIRECTORY_DOWNLOADS + "/" + statustext + "/" + statustext + ".json"),resultMap);
     }
 
     // 画像ファイルを保存関数//
@@ -696,17 +690,22 @@ public class MainActivity extends AppCompatActivity{
         distance = (float) Math.sqrt((move_x - syokipoint.x) * (move_x - syokipoint.x) + (move_y - syokipoint.y) * (move_y - syokipoint.y)); // 2点の距離
         float radian = (float) Math.atan2(move_y - syokipoint.y,move_x - syokipoint.x); //2点の角度ラジアン
         if (animation_flg){//アニメーションの時
-            //アニメーションフラグの設定部分でアニメーション範囲などの条件はクリアしている。
-            //ここでは単純な、アニメーション時のpointer_x,yの決定（制御処理）を実装
-            //ポインター座標　＋＝　2点間の距離distance+20の三角関数でｘとｙに変換したもの
-            // (座標上で言うマイナス方向も動くのか？？？？？→ラジアンがしっかり機能していれば.sinや.cosでマイナスの値になっているはず)
-            syoki_pointery += (float) (Math.sin(radian) * 30);
-            syoki_pointerx += (float) (Math.cos(radian) * 30);
-
+            //アニメーションの速度が早い。→遅くしないと。
+            syoki_pointery += (float) (Math.sin(radian) * 10);
+            syoki_pointerx += (float) (Math.cos(radian) * 10);
         }
-        pointer_y = syoki_pointery + (float) (Math.sin(radian) * distance*3);
-        pointer_x = syoki_pointerx + (float) (Math.cos(radian) * distance*3);
-        //Log.d("pointer", String.valueOf(distance)+"_"+String.valueOf(pointer_x) +"," + String.valueOf(pointer_y));
+        //pointer_y = syoki_pointery + (float) (Math.sin(radian) * distance * 3);
+        //pointer_x = syoki_pointerx + (float) (Math.cos(radian) * distance * 3);
+
+        Log.d("width",box.size.width+"||" +syoki_tanjiku*2.0/3.0+"::"+ syoki_tanjiku);//大体widthは最大6.*** ~ 最小3.***なので、1/3になることはない。
+        //親指：6.1***→4.1***。人差し指：5.3***→3.7***
+        if ((float)box.size.width <= syoki_tanjiku*1.0/2.0){//これだと横に立った状態はもちろん、爪を立てきったときも同じく加速度上がる
+            pointer_y = syoki_pointery + (float) (Math.sin(radian) * distance * 4.0);
+            pointer_x = syoki_pointerx + (float) (Math.cos(radian) * distance * 4.0);
+        }else{
+            pointer_y = syoki_pointery + (float) (Math.sin(radian) * distance * 3.0);
+            pointer_x = syoki_pointerx + (float) (Math.cos(radian) * distance * 3.0);
+        }
     }
 
     //bitmapに格納するpix配列にRGBデータ代入
